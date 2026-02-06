@@ -1,0 +1,149 @@
+{
+  "name": "rescume",
+  "version": "1.0.0",
+  "description": "Intelligent multi-agent resume tailoring system. Automatically parses your existing resumes into a comprehensive database, analyzes job descriptions for ATS keywords, maps your experiences to requirements, and generates perfectly optimized one-page resumes with guaranteed 100% skill coverage.",
+  "author": {
+    "name": "Andy (Xiangyi Wen)",
+    "email": "andywen718@gmail.com",
+    "url": "https://github.com/andywxy1"
+  },
+  "homepage": "https://github.com/andywxy1/rescume#readme",
+  "repository": "https://github.com/andywxy1/rescume",
+  "license": "MIT",
+  "keywords": [
+    "resume",
+    "job-application",
+    "ats",
+    "ats-optimization",
+    "career",
+    "recruitment",
+    "resume-tailoring",
+    "job-search",
+    "hiring",
+    "multi-agent",
+    "ai-agents",
+    "resume-builder",
+    "resume-parser",
+    "docx",
+    "career-development",
+    "productivity"
+  ],
+  "commands": "./commands/",
+  "agents": "./agents/",
+  "skills": "./skills/",
+  "hooks": "./hooks.json",
+  "icon": "./assets/icon.png",
+  "main": "plugin.json",
+  "engines": {
+    "claudeCode": ">=1.0.0",
+    "node": ">=18.0.0",
+    "python": ">=3.8.0"
+  },
+  "categories": [
+    "productivity",
+    "career",
+    "automation"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Rescume Configuration",
+      "properties": {
+        "rescume.targetWordCount": {
+          "type": "number",
+          "default": 475,
+          "minimum": 400,
+          "maximum": 600,
+          "description": "Target word count for one-page resume optimization"
+        },
+        "rescume.qualityThreshold": {
+          "type": "number",
+          "default": 7.0,
+          "minimum": 5.0,
+          "maximum": 10.0,
+          "description": "Minimum HR Critic quality score (1-10 scale)"
+        },
+        "rescume.hireProbabilityThreshold": {
+          "type": "number",
+          "default": 0.70,
+          "minimum": 0.50,
+          "maximum": 1.0,
+          "description": "Minimum hire probability for final validation"
+        },
+        "rescume.maxCompressionIterations": {
+          "type": "number",
+          "default": 10,
+          "minimum": 3,
+          "maximum": 20,
+          "description": "Maximum compression iterations before HR triage"
+        },
+        "rescume.databasePath": {
+          "type": "string",
+          "default": "data/comprehensive_db",
+          "description": "Path to resume database directory"
+        },
+        "rescume.autoBackup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically backup database after changes"
+        }
+      }
+    }
+  },
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onCommand:rescume.start",
+    "onCommand:rescume.parse",
+    "onCommand:rescume.analyze",
+    "onFilePattern:**/*.docx"
+  ],
+  "dependencies": {
+    "python": {
+      "version": ">=3.8",
+      "packages": {
+        "python-docx": ">=0.8.11"
+      }
+    }
+  },
+  "scripts": {
+    "install": "pip install python-docx --break-system-packages",
+    "test": "python -m pytest tests/",
+    "validate": "python scripts/validate_database.py"
+  },
+  "files": [
+    "plugin.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "agents/**/*.md",
+    "skills/**/*.md",
+    "skills/**/scripts/*.py",
+    "commands/**/*.md",
+    "hooks.json",
+    "assets/icon.png",
+    "docs/**/*.md",
+    "examples/**/*"
+  ],
+  "metadata": {
+    "displayName": "Rescume - AI Resume Tailor",
+    "publisher": "andywxy1",
+    "publishedDate": "2026-02-05",
+    "tags": [
+      "resume",
+      "career",
+      "job-search",
+      "ats-optimization",
+      "multi-agent-system"
+    ]
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Rescume requires trusted workspace to execute Python scripts"
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Rescume requires local file system access for database operations"
+    }
+  },
+  "pricing": "Free"
+}

@@ -1,0 +1,89 @@
+{
+  "onInstall": {
+    "description": "Initialize Rescume database structure and install Python dependencies",
+    "commands": [
+      {
+        "type": "bash",
+        "command": "pip install python-docx --break-system-packages",
+        "description": "Install python-docx library"
+      },
+      {
+        "type": "bash",
+        "command": "mkdir -p data/comprehensive_db data/uploaded_resumes data/job_applications",
+        "description": "Create data directories"
+      },
+      {
+        "type": "python",
+        "script": "skills/json-database/scripts/db_init.py",
+        "args": ["--output", "data/comprehensive_db"],
+        "description": "Initialize empty resume database"
+      }
+    ],
+    "successMessage": "✓ Rescume installed successfully! Your resume database is ready at data/comprehensive_db/",
+    "failureMessage": "✗ Installation failed. Please ensure Python 3.8+ is installed and try again."
+  },
+  "onUpdate": {
+    "description": "Migrate database to new version if schema changed",
+    "commands": [
+      {
+        "type": "bash",
+        "command": "pip install --upgrade python-docx --break-system-packages",
+        "description": "Update python-docx to latest version"
+      },
+      {
+        "type": "python",
+        "script": "skills/json-database/scripts/db_validate.py",
+        "args": ["--db-path", "data/comprehensive_db"],
+        "description": "Validate existing database structure"
+      },
+      {
+        "type": "bash",
+        "command": "cp -r data/comprehensive_db data/comprehensive_db.backup.$(date +%Y%m%d_%H%M%S)",
+        "description": "Backup database before update",
+        "optional": true
+      }
+    ],
+    "successMessage": "✓ Rescume updated to version {version}. Database validated successfully.",
+    "failureMessage": "✗ Update failed. Your data is safe at data/comprehensive_db/"
+  },
+  "onUninstall": {
+    "description": "Clean up Rescume data (with user confirmation)",
+    "confirmationRequired": true,
+    "confirmationMessage": "Do you want to delete your resume database? This will remove all your resume data permanently.",
+    "commands": [
+      {
+        "type": "bash",
+        "command": "rm -rf data/comprehensive_db data/uploaded_resumes data/job_applications",
+        "description": "Remove all resume data",
+        "confirmationRequired": true
+      },
+      {
+        "type": "bash",
+        "command": "pip uninstall -y python-docx",
+        "description": "Uninstall python-docx",
+        "optional": true
+      }
+    ],
+    "keepDataOption": {
+      "enabled": true,
+      "message": "Would you like to keep your resume database? (You can use it if you reinstall Rescume)",
+      "ifKeep": {
+        "message": "✓ Rescume uninstalled. Your resume database is preserved at data/comprehensive_db/"
+      },
+      "ifDelete": {
+        "message": "✓ Rescume uninstalled. All data removed."
+      }
+    }
+  },
+  "onError": {
+    "description": "Error recovery procedures",
+    "databaseCorrupted": {
+      "command": "python skills/json-database/scripts/db_validate.py --db-path data/comprehensive_db --fix",
+      "description": "Attempt to repair corrupted database"
+    },
+    "missingDependencies": {
+      "command": "pip install python-docx --break-system-packages",
+      "description": "Reinstall missing Python dependencies"
+    }
+  }
+}
