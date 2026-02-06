@@ -7,7 +7,10 @@
   "plugins": [
     {
       "name": "rescume",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "andywxy1/rescume"
+      },
       "description": "Intelligent multi-agent resume tailoring system. Automatically parses your existing resumes into a comprehensive database, analyzes job descriptions for ATS keywords, maps your experiences to requirements, and generates perfectly optimized one-page resumes with guaranteed 100% skill coverage.",
       "version": "1.0.0"
     }
