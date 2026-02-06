@@ -1,0 +1,15 @@
+{
+  "name": "andy-plugins",
+  "owner": {
+    "name": "Andy (Xiangyi Wen)",
+    "email": "andywen718@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "rescume",
+      "source": ".",
+      "description": "Intelligent multi-agent resume tailoring system. Automatically parses your existing resumes into a comprehensive database, analyzes job descriptions for ATS keywords, maps your experiences to requirements, and generates perfectly optimized one-page resumes with guaranteed 100% skill coverage.",
+      "version": "1.0.0"
+    }
+  ]
+}
