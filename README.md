@@ -1,318 +1,396 @@
 # 🚀 Rescume - AI Resume Tailoring System
 
-**"Rescue My Resume"** - An intelligent multi-agent system for tailoring resumes to specific job descriptions.
+**"Rescue My Resume"** - An intelligent multi-agent system with Typst-based PDF rendering for perfectly tailored resumes.
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/andywxy1/rescume/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/andywxy1/rescume/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Typst](https://img.shields.io/badge/typst-0.11+-orange.svg)](https://typst.app)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-purple.svg)](https://code.claude.com)
 
 ## 📋 Overview
 
-Rescume is a Claude Code plugin that transforms your job application process. Upload your existing resumes once, and Rescume will:
+Rescume is a Claude Code plugin that transforms your job application process with AI-powered resume tailoring and professional PDF rendering. Upload your existing resumes once, and Rescume will:
 
 - ✅ Parse and build a comprehensive resume database
 - ✅ Analyze job descriptions for ATS keywords and requirements
-- ✅ Map your experiences to job requirements
-- ✅ Generate perfectly tailored one-page resumes
+- ✅ Map your experiences to job requirements with 100% skill coverage
+- ✅ Generate perfectly tailored single-page PDF resumes
+- ✅ Auto-fit layout ensures content fits on one page
 - ✅ Optimize for Applicant Tracking Systems (ATS)
-- ✅ Guarantee 100% coverage of required skills
-- ✅ Deliver both DOCX (editable) and PDF (submission) versions
+- ✅ Deliver professional PDF output in <200ms
+
+## ✨ What's New in v2.0
+
+### 🎯 Typst-Based PDF Rendering
+
+v2.0 introduces a revolutionary architecture shift:
+
+- **No more DOCX formatting headaches** - Pure PDF output via Typst
+- **Auto-fit templates** - Guaranteed single-page output
+- **Lightning fast** - ~50-100ms compilation time
+- **Deterministic rendering** - Same content → Same PDF, every time
+- **LLM focuses on content** - No more word counting or layout concerns
+
+**Migration from v1.0:** Database format unchanged. Just install Typst CLI and re-run tailoring for PDF output.
 
 ## ✨ Features
 
-### 🤖 7 Specialized AI Agents
+### 🤖 6 Specialized AI Agents
 
-1. **Resume Parser** - Extracts structured data from DOCX resumes
+1. **Resume Parser** - Extracts structured data from DOCX/PDF resumes
 2. **ATS Analyzer** - Identifies job requirements and keywords
 3. **Coverage Mapper** - Maps experiences to requirements, finds gaps
-4. **Content Generator** - Creates tailored resume content
-5. **HR Critic** - Evaluates quality from hiring manager perspective
-6. **Compression Strategist** - Optimizes to fit one page
-7. **Interview Conductor** - Asks intelligent follow-up questions
+4. **Content Generator** - Creates tailored resume content (JSON output)
+5. **HR Critic** - Evaluates content quality from hiring manager perspective
+6. **Interview Conductor** - Asks intelligent follow-up questions to enrich database
 
 ### 🛠️ 4 Custom Skills (Tools)
 
 1. **Rescume Coordinator** - Orchestrates the entire workflow
 2. **JSON Database** - Manages your resume data persistently
-3. **Word Counter** - Section-by-section word tracking
+3. **Typst Renderer** - Compiles JSON content to professional PDF
 4. **Coverage Tracker** - Verifies all required skills are present
+
+### 🎨 Template System
+
+- **Modular Typst templates** - Multiple professional designs
+- **Auto-fit logic** - Automatically adjusts font size (9-10.5pt) to fit content
+- **Simple Technical Resume** - Clean, ATS-friendly single-column layout (v2.0 default)
+- **Extensible** - Easy to add custom templates
 
 ### 🎯 Key Capabilities
 
-- **Template Preservation**: Uses your resume formatting style
-- **Section-Based Optimization**: Only edits Experience & Skills sections
+- **Intelligent Content Selection**: AI chooses most relevant experiences
+- **ATS Optimization**: Exact keyword matching from job descriptions
 - **Quality Assurance**: HR Critic ensures professional quality
-- **Safety Checks**: Never loses required skills during compression
-- **User Validation**: Always confirms page count before finalizing
-- **Growing Database**: Each application enriches your database
+- **Fast Iteration**: Typst renders in ~50ms, making revisions instant
+- **Safety Checks**: Guarantees 100% coverage of required skills
+- **Growing Database**: Each application enriches your resume database
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- **Python 3.8+**
+- **Typst CLI** (v0.11+)
+- **Claude Code** (latest version)
+
 ### Installation
 
-#### Option 1: Install via Claude Code CLI
+#### Step 1: Install Typst CLI
 
 ```bash
-claude plugin install https://github.com/andywxy1/rescume
+# macOS (via Homebrew)
+brew install typst
+
+# Linux
+curl -fsSL https://typst.community | bash
+
+# Windows
+winget install --id Typst.Typst
+
+# Verify installation
+typst --version
 ```
 
-#### Option 2: Manual Installation
+#### Step 2: Install Rescume Plugin
 
+**Via Claude Code Marketplace:**
+```bash
+# Add the marketplace
+claude plugin marketplace add andywxy1/rescume
+
+# Install the plugin
+claude plugin install rescume@andy-plugins
+```
+
+**Or Manual Installation:**
 ```bash
 # Clone repository
 git clone https://github.com/andywxy1/rescume.git
 cd rescume
 
-# Copy skills
-cp -r skills/* ~/.claude/skills/user/
-
-# Copy agents
-cp -r agents/* ~/.claude/agents/
-
 # Install Python dependencies
-pip install python-docx --break-system-packages
+pip install python-docx pdfplumber --break-system-packages
 
-# Restart Claude Code
+# The plugin is ready to use from this directory
+```
+
+#### Step 3: Verify Installation
+
+```bash
+# Check that Typst is accessible
+typst --version
+
+# List available templates
+python skills/typst-renderer/scripts/list_templates.py
 ```
 
 ### First Use
 
-1. **Build Your Database** (One-time setup)
-   ```
-   "I want to build my resume database"
-   ```
-   - Upload your existing DOCX resumes
-   - Answer follow-up questions to enrich data
+#### Phase 1: Build Your Resume Database (One-Time Setup)
 
-2. **Tailor for a Job**
-   ```
-   "Tailor my resume for this [Job Title] role at [Company]"
-   ```
-   - Upload or paste job description
-   - Review coverage and fill any gaps
-   - Approve final resume
+```
+"I want to build my resume database"
+```
 
-3. **Get Your Resume**
-   - Download DOCX (editable)
-   - Download PDF (for submission)
+1. Upload your existing resumes (DOCX format)
+2. Rescume parses them into structured JSON
+3. Answer follow-up questions to enrich your database
+4. Database saved to `data/comprehensive_db/`
+
+**What gets stored:**
+- Work experiences with bullet points
+- Education history
+- Skills with proficiency levels
+- Projects and achievements
+- Contact information
+
+#### Phase 2: Tailor Resume for a Job
+
+```
+"Tailor my resume for this [Job Title] role at [Company]"
+```
+
+1. **Provide Job Description** - Paste text or upload file
+2. **ATS Analysis** - Identifies required skills and keywords
+3. **Coverage Mapping** - Maps your experiences to requirements
+4. **Content Generation** - Creates tailored JSON content
+5. **Template Selection** - Choose from available templates
+6. **PDF Rendering** - Typst compiles to single-page PDF
+7. **Quality Check** - HR Critic evaluates content
+8. **Download** - Get your optimized PDF resume
+
+**Output:** `data/job_applications/[job_id]/resume.pdf`
 
 ## 📖 How It Works
 
-### Phase 1: Initial Setup (One-Time)
+### Architecture Overview
 
 ```
-Upload DOCX Resumes
-    ↓
-Resume Parser → Extracts structure
-    ↓
-Interview Conductor → Asks questions
-    ↓
-Database Built (experiences, skills, projects, education)
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 1: Database Building (One-Time)                            │
+│                                                                   │
+│  DOCX Resume → resume-parser → Structured JSON Database          │
+│                 ↓                                                 │
+│            interview-conductor → Enriched Database                │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 2: Resume Tailoring (Per Job Application)                  │
+│                                                                   │
+│  Job Description                                                  │
+│       ↓                                                           │
+│  ats-analyzer → Requirements JSON                                 │
+│       ↓                                                           │
+│  coverage-mapper → Coverage Matrix + Prioritized Experiences      │
+│       ↓                                                           │
+│  content-generator → Structured JSON Content                      │
+│       ↓                                                           │
+│  User selects Typst template                                      │
+│       ↓                                                           │
+│  typst-renderer → Single-Page PDF                                 │
+│       ↓                                                           │
+│  hr-critic → Quality Validation                                   │
+│       ↓                                                           │
+│  Deliver PDF Resume                                               │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Phase 2: Tailoring (For Each Job)
+### Key Workflow Changes in v2.0
 
+**v1.0 (DOCX-based):**
 ```
-Upload Job Description
-    ↓
-ATS Analyzer → Extracts requirements
-    ↓
-Coverage Mapper → Checks skill coverage (must reach 100%)
-    ↓
-    [If gaps] → Interview Conductor (gap filling)
-    ↓
-Content Generator → Creates initial draft (~600 words)
-    ↓
-HR Critic (comprehensive) → Evaluates quality
-    ↓
-Apply improvements (may exceed 1 page)
-    ↓
-Compression Strategist → Optimizes to ~475 words
-    ↓
-    [If stuck] → HR Critic (triage) → Makes strategic decision
-    ↓
-HR Critic (final validation) → Ship/no-ship decision
-    ↓
-Final Resume: DOCX + PDF
+Generate DOCX → Count words → Too long? → Compress → Recount → Repeat...
+❌ Slow, unpredictable, required ~10 iterations
 ```
 
-## 💡 Usage Examples
-
-### Example 1: Complete Workflow
-
+**v2.0 (Typst-based):**
 ```
-User: "I want to tailor my resume for Senior Data Analyst at PCI Energy"
-
-Claude: [Uploads job description]
-Claude (using Rescume):
-  ✓ Analyzed JD: 20 requirements (12 must-have, 8 nice-to-have)
-  ✓ Checked coverage: 85% (missing Kubernetes)
-  
-  Question: "This role requires Kubernetes. Do you have container 
-  orchestration experience?"
-  
-User: "Yes, I used Docker extensively at Company X"
-
-Claude:
-  ✓ Updated database with Docker experience
-  ✓ Coverage now 100%
-  ✓ Generated initial draft (550 words)
-  ✓ HR critique applied
-  ✓ Compressed to 485 words
-  ✓ Final validation: APPROVED (hire probability: 78%)
-  
-  Here's your tailored resume [DOCX + PDF]
+Generate JSON → Typst compile → PDF done! (~50ms)
+✅ Fast, deterministic, single-pass rendering
 ```
 
-### Example 2: Using Slash Commands
-
-```bash
-# Parse your resumes first
-/rescume parse
-[Upload resume_2024.docx, technical_resume.docx]
-
-# Analyze a job description
-/rescume analyze
-[Paste job description]
-
-# Start tailoring
-/rescume start Senior Data Analyst
-[Follow the prompts]
+**If content is too dense:**
+```
+Typst reports "font too small" → Trim 2-3 bullets → Recompile → Done!
+✅ Simple, fast, no complex compression logic needed
 ```
 
-## 📂 File Structure
-
-After using Rescume, you'll have:
+## 🗂️ Project Structure
 
 ```
-data/
-├── comprehensive_db/          # Your persistent resume database
-│   ├── experiences.json       # Work experiences
-│   ├── skills.json           # All skills
-│   ├── projects.json         # Projects
-│   ├── education.json        # Education
-│   └── metadata.json         # Personal info
+rescume/
+├── .claude-plugin/
+│   ├── plugin.json              # Plugin metadata
+│   └── marketplace.json         # Marketplace configuration
 │
-├── uploaded_resumes/         # Original DOCX templates
-│   └── *.docx
+├── agents/                      # AI agent definitions
+│   ├── ats-analyzer.md          # Job requirement analysis
+│   ├── content-generator.md     # JSON content generation
+│   ├── coverage-mapper.md       # Requirement mapping
+│   ├── hr-critic.md             # Quality evaluation
+│   ├── interview-conductor.md   # Database enrichment
+│   └── resume-parser.md         # DOCX parsing
 │
-└── job_applications/         # Per-job directories
-    └── pci_energy_analyst_2024_02_05/
-        ├── jd_original.txt
-        ├── jd_analyzed.json
-        ├── coverage_matrix.json
-        ├── working_resume.docx
-        ├── final_resume.docx
-        └── final_resume.pdf
+├── skills/                      # Tool skills
+│   ├── rescume/                 # Main coordinator
+│   ├── json-database/           # Database management
+│   ├── typst-renderer/          # PDF compilation (NEW v2.0)
+│   │   ├── SKILL.md
+│   │   └── scripts/
+│   │       ├── compile.py           # Main compiler
+│   │       ├── json_to_typst.py     # JSON → Typst converter
+│   │       ├── validate_pdf.py      # PDF validation
+│   │       └── list_templates.py    # Template discovery
+│   └── coverage-tracker/        # Skill verification
+│
+├── templates/                   # Typst resume templates (NEW v2.0)
+│   ├── README.md                # Template authoring guide
+│   └── simple-technical-resume/ # Default template
+│       ├── template.typ         # Main template with auto-fit
+│       ├── metadata.json        # Template info
+│       ├── main.typ             # Example usage
+│       └── example.pdf          # Preview
+│
+├── hooks/
+│   └── hooks.json               # Installation hooks
+│
+├── data/                        # Runtime data (created on install)
+│   ├── comprehensive_db/        # Your resume database
+│   │   ├── experiences.json
+│   │   ├── skills.json
+│   │   ├── projects.json
+│   │   ├── education.json
+│   │   └── metadata.json
+│   └── job_applications/        # Per-job outputs
+│       └── [job_id]/
+│           ├── jd_analyzed.json      # Job requirements
+│           ├── coverage_matrix.json  # Skill mapping
+│           ├── content.json          # Generated content
+│           └── resume.pdf            # Final output
+│
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
 ```
 
-## ⚙️ Configuration
+## 🎨 Templates
 
-Customize Rescume settings in Claude Code preferences:
+Rescume v2.0 uses Typst templates for professional PDF rendering. Each template includes auto-fit logic to ensure single-page output.
 
-```json
-{
-  "rescume.targetWordCount": 475,
-  "rescume.qualityThreshold": 7.0,
-  "rescume.hireProbabilityThreshold": 0.70,
-  "rescume.maxCompressionIterations": 10,
-  "rescume.databasePath": "data/comprehensive_db",
-  "rescume.autoBackup": true
-}
-```
+### Available Templates
 
-## 🔧 Requirements
+**simple-technical-resume** (Default)
+- Clean, ATS-friendly single-column layout
+- Auto-fit font sizing (9-10.5pt)
+- Perfect for software engineers, data scientists, technical roles
+- Based on Typst Universe package
 
-- **Claude Code**: 1.0.0 or higher
-- **Python**: 3.8 or higher
-- **python-docx**: 0.8.11 or higher
-- **DOCX files**: Input must be Word documents (not PDF)
+### Adding Custom Templates
+
+See `templates/README.md` for the template authoring guide.
+
+Requirements:
+- Accept standard JSON schema
+- Implement auto-fit logic
+- Provide metadata.json
+- Generate single-page output
+
+## 🔧 Configuration
+
+Rescume works out-of-the-box with sensible defaults. Advanced users can customize via plugin settings.
+
+### Plugin Settings
+
+**Template Configuration:**
+- `rescume.defaultTemplate`: Default template name (default: `"simple-technical-resume"`)
+- `rescume.minFontSize`: Minimum font size after auto-fit (default: `9.0` pt)
+- `rescume.typstPath`: Path to Typst CLI binary (default: `"typst"`)
+- `rescume.templateDir`: Template directory path (default: `"templates/"`)
+
+**Database Configuration:**
+- `rescume.databasePath`: Resume database location (default: `"data/comprehensive_db"`)
+- `rescume.autoBackup`: Auto-backup database after changes (default: `true`)
+
+**Quality Thresholds:**
+- `rescume.qualityThreshold`: Minimum HR Critic score (default: `7.0` out of 10)
+- `rescume.hireProbabilityThreshold`: Minimum hire probability (default: `0.70`)
 
 ## 📚 Documentation
 
-- [Getting Started Guide](docs/getting-started.md) *(coming soon)*
-- [User Guide](docs/user-guide.md) *(coming soon)*
-- [Architecture Overview](docs/architecture.md) *(coming soon)*
-- [Troubleshooting](docs/troubleshooting.md) *(coming soon)*
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and migration notes
+- **[RESCUME_V2_UPDATE_PLAN.md](RESCUME_V2_UPDATE_PLAN.md)** - v2.0 architecture rationale
+- **[templates/README.md](templates/README.md)** - Template authoring guide
+- **[skills/typst-renderer/SKILL.md](skills/typst-renderer/SKILL.md)** - Rendering pipeline docs
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### "Typst CLI not found"
 
-**Issue**: "Coverage stuck at 90%"
-- **Solution**: Answer gap-filling questions about missing skills
+```bash
+# Install Typst
+brew install typst  # macOS
+# Or visit https://typst.app for other platforms
 
-**Issue**: "Resume is 1.1 pages after compression"
-- **Solution**: Provide feedback, system will compress further
+# Verify
+typst --version
+```
 
-**Issue**: "Database not found"
-- **Solution**: Run initial setup first to build database: `/rescume parse`
+### "pdfplumber not installed"
 
-**Issue**: "Cannot parse PDF resume"
-- **Solution**: Rescume only works with DOCX files, convert PDF to DOCX first
+```bash
+pip install pdfplumber --break-system-packages
+```
+
+### "Resume overflows 1 page"
+
+The auto-fit template reports this when content is too dense even at minimum font size (9pt).
+
+**Solution:** Ask the LLM to trim 2-3 bullet points:
+```
+"The resume is too long. Please remove 2-3 less relevant bullet points and recompile."
+```
+
+### "Invalid JSON schema"
+
+Content generator produced invalid JSON. Check:
+- All required fields present (`header.name` at minimum)
+- Dates in `YYYY-MM` format
+- No unescaped quotes in strings
 
 ## 🤝 Contributing
 
-Contributions welcome! Please:
+Contributions welcome! Areas of interest:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- **New Typst Templates** - Design new resume styles
+- **Enhanced Parsers** - Support more input formats (PDF, LinkedIn, etc.)
+- **Improved ATS Analysis** - Better keyword extraction
+- **Multi-Page Support** - Option for longer resumes (CV format)
+- **Internationalization** - Support for non-English resumes
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See `CONTRIBUTING.md` for guidelines.
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Andy (Xiangyi Wen)**
-- Data Scientist specializing in Product Analytics
-- M.S.E. in Data Science, University of Pennsylvania
-- GitHub: [@andywxy1](https://github.com/andywxy1)
-- Email: andywen718@gmail.com
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [Claude Code](https://code.claude.com)
-- Powered by Claude 4.5 Sonnet
-- Inspired by the challenges of modern job applications
-
-## 📊 Stats
-
-- **7 AI Agents** with specialized expertise
-- **4 Custom Skills** for resume processing
-- **~2,500 lines** of carefully crafted prompts
-- **100% skill coverage** guarantee
-- **One-page optimization** using word count heuristics
-
-## 🚀 Roadmap
-
-- [ ] Support for multi-page resumes
-- [ ] PDF input support (OCR-based)
-- [ ] LinkedIn profile optimization
-- [ ] Cover letter generation
-- [ ] Interview preparation questions
-- [ ] Job application tracking
-- [ ] Resume templates library
-- [ ] Multilingual support
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
+- **Typst** - Modern typesetting system (https://typst.app)
+- **simple-technical-resume** - Typst template by Himank Dave
+- **Claude Code** - AI-powered development environment
+- **Anthropic** - Claude Sonnet 4.5 AI model
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/andywxy1/rescume/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/andywxy1/rescume/discussions)
-- **Email**: andywen718@gmail.com
+- **Issues:** [GitHub Issues](https://github.com/andywxy1/rescume/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/andywxy1/rescume/discussions)
+- **Email:** andywen718@gmail.com
 
 ---
 
-**Ready to rescue your resume?** 🎉
+**Built with ❤️ by Andy Wen**
 
-Install Rescume today and transform your job application process!
-
-**Star this repo** ⭐ if you find it helpful!
+*Rescue your resume, land your dream job!*
