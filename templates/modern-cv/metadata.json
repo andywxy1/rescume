@@ -1,0 +1,30 @@
+{
+  "name": "modern-cv",
+  "displayName": "Modern CV",
+  "description": "Colorful, modern resume template with accent colors and professional styling. Perfect for creative roles while remaining ATS-friendly.",
+  "author": "DeveloperPaul123 (adapted for Rescume)",
+  "version": "0.9.0",
+  "preview": "example.pdf",
+  "features": [
+    "Modern, colorful design with customizable accent color",
+    "ATS-friendly structure with clear sections",
+    "Auto-fit font sizing based on content volume",
+    "Professional header with contact information",
+    "Clean, readable layout"
+  ],
+  "defaultFontSize": "10pt",
+  "minFontSize": "9pt",
+  "accentColor": "#26428b",
+  "recommendedFor": "Software engineers, designers, product managers, creative technical roles",
+  "requiredFields": ["header", "education", "experience", "skills"],
+  "optionalFields": ["summary", "projects"],
+  "fonts": {
+    "main": "New Computer Modern",
+    "notes": "Uses Typst's default fonts with colored accents"
+  },
+  "styling": {
+    "colorHeaders": true,
+    "showFooter": false,
+    "paperSize": "us-letter"
+  }
+}
