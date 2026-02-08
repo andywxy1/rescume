@@ -1,11 +1,16 @@
 {
   "onInstall": {
-    "description": "Initialize Rescume database structure and install Python dependencies",
+    "description": "Initialize Rescume and install dependencies (Typst, Python packages)",
     "commands": [
       {
         "type": "bash",
-        "command": "pip install python-docx --break-system-packages",
-        "description": "Install python-docx library"
+        "command": "typst --version || echo '⚠ Typst not found. Install with: brew install typst (macOS) or visit https://typst.app'",
+        "description": "Check Typst CLI availability"
+      },
+      {
+        "type": "bash",
+        "command": "pip3 install pdfplumber python-docx --break-system-packages",
+        "description": "Install Python dependencies (pdfplumber for PDF validation, python-docx for parsing)"
       },
       {
         "type": "bash",
@@ -19,8 +24,8 @@
         "description": "Initialize empty resume database"
       }
     ],
-    "successMessage": "✓ Rescume installed successfully! Your resume database is ready at data/comprehensive_db/",
-    "failureMessage": "✗ Installation failed. Please ensure Python 3.8+ is installed and try again."
+    "successMessage": "✓ Rescume v2.0 installed! Typst-based PDF rendering is ready. Database initialized at data/comprehensive_db/",
+    "failureMessage": "✗ Installation failed. Ensure Python 3.8+ and Typst CLI are installed."
   },
   "onUpdate": {
     "description": "Migrate database to new version if schema changed",

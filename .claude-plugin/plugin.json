@@ -1,7 +1,7 @@
 {
   "name": "rescume",
-  "version": "1.0.0",
-  "description": "Intelligent multi-agent resume tailoring system. Automatically parses your existing resumes into a comprehensive database, analyzes job descriptions for ATS keywords, maps your experiences to requirements, and generates perfectly optimized one-page resumes with guaranteed 100% skill coverage.",
+  "version": "2.0.0",
+  "description": "Intelligent multi-agent resume tailoring system with Typst-based PDF rendering. Automatically parses your existing resumes into a comprehensive database, analyzes job descriptions for ATS keywords, maps your experiences to requirements, and generates perfectly optimized single-page PDF resumes with auto-fit layout and guaranteed skill coverage.",
   "author": {
     "name": "Andy (Xiangyi Wen)",
     "email": "andywen718@gmail.com"

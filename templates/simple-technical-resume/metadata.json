@@ -1,0 +1,23 @@
+{
+  "name": "simple-technical-resume",
+  "displayName": "Simple Technical Resume",
+  "description": "Clean, ATS-friendly single-column resume template. Perfect for technical roles with emphasis on experience and projects.",
+  "author": "Himank Dave (adapted for Rescume)",
+  "version": "0.1.1",
+  "preview": "example.pdf",
+  "features": [
+    "ATS-friendly single-column layout",
+    "Auto-fit font sizing based on content volume",
+    "Optimized for technical resumes",
+    "Clean, professional design"
+  ],
+  "defaultFontSize": "10.5pt",
+  "minFontSize": "9pt",
+  "recommendedFor": "Software engineers, data scientists, technical roles",
+  "requiredFields": ["header", "education", "experience", "skills"],
+  "optionalFields": ["summary", "projects"],
+  "fonts": {
+    "main": "New Computer Modern",
+    "notes": "Uses Typst's default fonts, no external fonts required"
+  }
+}
