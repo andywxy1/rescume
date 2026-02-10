@@ -1,0 +1,10 @@
+{
+  "name": "basic-resume",
+  "description": "Clean, ATS-friendly single-column resume template",
+  "default_font": "New Computer Modern",
+  "default_font_size": "11pt",
+  "min_font_size": "9pt",
+  "recommended_content": "3-5 experience entries",
+  "author": "Rescume v2.0",
+  "version": "1.0.0"
+}

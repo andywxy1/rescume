@@ -1,6 +1,6 @@
 ---
 name: coverage-tracker
-description: "Verify that required skills from job description are present in resume. Use when you need to: (1) Check if all must-have skills are covered, (2) Verify skill coverage hasn't been lost during compression, (3) Identify which experiences demonstrate which skills, (4) Calculate overall coverage percentage. Critical safety check to ensure compression never sacrifices required skills."
+description: "Verify that required skills from job description are present in resume. Use when you need to: (1) Check if all must-have skills are covered, (2) Identify which experiences demonstrate which skills, (3) Calculate overall coverage percentage, (4) Find gaps before content generation. Critical check to ensure all required skills are demonstrated."
 ---
 
 # Coverage Tracker - Skill Coverage Verification
@@ -229,24 +229,6 @@ python scripts/check_coverage.py --resume updated_resume.docx --requirements jd_
 # Output: 100% coverage ✓
 ```
 
-### Compression Safety Check
-
-```bash
-# Before compression iteration
-python scripts/check_coverage.py --resume draft_v1.docx --requirements jd_analyzed.json > coverage_v1.json
-
-# Compression happens
-compression-strategist compresses draft_v1.docx → draft_v2.docx
-
-# After compression
-python scripts/check_coverage.py --resume draft_v2.docx --requirements jd_analyzed.json > coverage_v2.json
-
-# Verify no loss
-python scripts/verify_unchanged.py --before coverage_v1.json --after coverage_v2.json
-
-# Result: coverage_maintained = true ✓ (safe to continue)
-# OR: coverage_maintained = false ✗ (ROLLBACK!)
-```
 
 ## Python Script Reference
 
@@ -344,51 +326,26 @@ The coverage tracker uses fuzzy matching to detect skills in resume text:
 - **Action if missing**: Note in coverage report, but not critical
 - **Compression rule**: Can remove if necessary for space
 
-## Integration with compression-strategist
-
-The compression-strategist uses this skill as a safety check:
-
-```python
-# Compression agent workflow
-def compress(resume, requirements):
-    # 1. Check baseline coverage
-    baseline_coverage = check_coverage(resume, requirements)
-    
-    # 2. Apply compression
-    compressed_resume = apply_compression_rules(resume)
-    
-    # 3. Verify coverage maintained
-    new_coverage = check_coverage(compressed_resume, requirements)
-    
-    # 4. Safety check
-    coverage_ok = verify_unchanged(baseline_coverage, new_coverage)
-    
-    if not coverage_ok:
-        # ROLLBACK! Compression lost required skill
-        return {"status": "cannot_compress", "reason": "Would lose required skill"}
-    
-    return {"status": "success", "compressed_resume": compressed_resume}
-```
 
 ## Safety Mechanisms
 
 ### Hard Constraints
-1. **Never compress below 100% must-have coverage**
-2. **Never remove last evidence of required skill**
-3. **Flag if coverage strength drops below "weak"**
+1. **Ensure 100% must-have coverage before content generation**
+2. **Track evidence strength for all required skills**
+3. **Flag if coverage strength is weak (single evidence)**
 
 ### Warning Signals
-- Coverage percentage drops > 5%
-- Must-have skill has only 1 piece of evidence remaining
+- Must-have skill with only 1 piece of evidence (weak coverage)
 - Nice-to-have coverage drops below 70%
+- Required skill has no evidence (gap)
 
 ## Best Practices
 
-1. **Check coverage before every compression iteration**
-2. **Use verify_unchanged.py as gate before accepting compressed version**
-3. **Map skills early** to identify high-priority experiences
-4. **Never skip gap filling** - always get to 100% coverage before content generation
-5. **Keep evidence diverse** - don't rely on single experience for multiple skills
+1. **Check coverage after JD analysis** before content generation
+2. **Map skills early** to identify high-priority experiences
+3. **Never skip gap filling** - always get to 100% must-have coverage before content generation
+4. **Keep evidence diverse** - don't rely on single experience for multiple skills
+5. **Prioritize experiences** that demonstrate multiple required skills
 
 ## Error Handling
 

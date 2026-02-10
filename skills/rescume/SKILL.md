@@ -1,15 +1,15 @@
 ---
 name: rescume
-description: "Intelligent resume tailoring system with Typst-based PDF rendering. Use when user wants to: (1) Tailor their resume for a specific job description, (2) Build a comprehensive resume database from existing resumes, (3) Optimize resume for ATS (Applicant Tracking Systems), (4) Generate single-page PDF resume with auto-fit layout, (5) Get feedback on resume quality for a specific role. Orchestrates specialized subagents (resume-parser, ats-analyzer, coverage-mapper, content-generator, hr-critic, interview-conductor) and typst-renderer skill to deliver professional PDF resumes in <200ms."
+description: "Intelligent resume tailoring system that 'rescues' your resume for specific job applications. Use when user wants to: (1) Tailor their resume for a specific job description, (2) Build a comprehensive resume database from existing resumes, (3) Optimize resume for ATS (Applicant Tracking Systems), (4) Ensure resume fits on one page while covering all required skills, (5) Get feedback on resume quality for a specific role. Works exclusively with DOCX files. Orchestrates specialized subagents (resume-parser, ats-analyzer, coverage-mapper, content-generator, hr-critic, compression-strategist, interview-conductor) to handle the complete workflow from parsing uploaded resumes to delivering a perfectly tailored one-page resume."
 ---
 
 # Rescume - Rescue Your Resume
 
-**Tagline**: "Rescue My Resume" - An intelligent multi-agent system with Typst-based PDF rendering for perfectly tailored resumes.
+**Tagline**: "Rescue My Resume" - An intelligent multi-agent system for tailoring resumes to specific job descriptions.
 
 ## Overview
 
-Rescume v2.0 is a coordinator skill that orchestrates specialized AI subagents to transform your existing resumes into a comprehensive database, then craft perfectly tailored single-page PDF resumes for each job application. The system uses Typst templates with auto-fit logic to ensure professional PDF output without word-counting or iterative compression.
+Rescume is a coordinator skill that orchestrates specialized AI subagents to transform your existing resumes into a comprehensive database, then craft perfectly tailored resumes for each job application. The system ensures all required skills are covered while maintaining professional quality and one-page format.
 
 ## Core Workflow
 
@@ -21,7 +21,7 @@ Rescume v2.0 is a coordinator skill that orchestrates specialized AI subagents t
 2. **Call `resume-parser` subagent** for each uploaded file
    - Input: DOCX file path
    - Output: Structured JSON (experiences, skills, projects, education)
-   - The subagent uses the `json-database` skill
+   - The subagent uses the `docx` skill and `json-database` skill
 3. **Call `interview-conductor` subagent** to deepen understanding
    - Input: Current database state
    - Output: Intelligent follow-up questions
@@ -30,7 +30,7 @@ Rescume v2.0 is a coordinator skill that orchestrates specialized AI subagents t
 5. **Update database** with new information using `json-database` skill
 6. **Database ready** for tailoring jobs
 
-**Data structure created:**
+**Data structure** created:
 ```
 data/
 ├── comprehensive_db/
@@ -40,12 +40,12 @@ data/
 │   ├── education.json
 │   └── metadata.json
 └── uploaded_resumes/
-    └── *.docx  (for parsing only)
+    └── *.docx  (style templates)
 ```
 
-### Phase 2: Tailoring for a Specific Job (v2.0 Workflow)
+### Phase 2: Tailoring for a Specific Job
 
-**Goal**: Create optimized single-page PDF resume for target role
+**Goal**: Create optimized one-page resume for target role
 
 #### Step 1: Job Analysis
 
@@ -67,372 +67,274 @@ data/
    - Re-run `coverage-mapper` subagent
 3. **Repeat until** coverage = 100% or user confirms no more experiences
 
-#### Step 3: Template Selection (NEW in v2.0)
+#### Step 3: Content Generation
 
-1. **List available templates** using `typst-renderer` skill:
-   ```bash
-   python skills/typst-renderer/scripts/list_templates.py
-   ```
-2. **Present template options** to user with previews
-3. **User selects template** (or use default: `simple-technical-resume`)
-4. **Save template choice** for this job application
+1. **Select style template**: Choose any uploaded DOCX for formatting reference
+2. **Call `content-generator` subagent**
+   - Input: Database, coverage matrix, JD analysis, style template
+   - Output: Initial draft DOCX (likely >1 page)
+   - Note: Content from database, formatting from template
+   - Save to: `data/job_applications/[job_id]/working_resume.docx`
 
-**Available templates** (v2.0 launch):
-- `simple-technical-resume` - Clean, ATS-friendly, single-column (default)
+#### Step 4: HR Content Critique
 
-#### Step 4: Content Generation (SIMPLIFIED in v2.0)
-
-**CRITICAL CHANGE**: Content generator now outputs pure JSON, NOT DOCX
-
-1. **Call `content-generator` subagent**
-   - Input: Database, coverage matrix, JD analysis
-   - Output: Structured JSON content (see schema below)
-   - NO formatting concerns, NO word counting
-   - Focus: Write the best, most tailored content
-   - Save to: `data/job_applications/[job_id]/content.json`
-
-**Content JSON Schema:**
-```json
-{
-  "header": {
-    "name": "string",
-    "location": "string",
-    "email": "string",
-    "phone": "string",
-    "linkedin": "string",
-    "github": "string",
-    "website": "string"
-  },
-  "summary": "optional string",
-  "education": [...],
-  "experience": [...],
-  "projects": [...],
-  "skills": {
-    "languages": ["..."],
-    "frameworks": ["..."],
-    "tools": ["..."],
-    "concepts": ["..."]
-  }
-}
-```
-
-**Soft guidelines for content-generator:**
-- 3-5 bullet points per experience
-- 1-2 sentences per bullet
-- Focus on impact and relevance
-- Don't artificially limit content to fit a page
+1. **Call `hr-critic` subagent** in `comprehensive` mode
+   - Input: Initial draft, JD analysis
+   - Focus: Content quality (ignore page limit)
+   - Output: Bullet scores, improvement suggestions, priority assignments
+2. **Apply HR feedback** to improve content
+   - Strengthen weak bullets
+   - Add quantification
+   - Improve action verbs
+   - May make resume longer (that's OK)
 
 #### Step 5: Typst Compilation (NEW in v2.0)
 
-1. **Compile to PDF** using `typst-renderer` skill:
-   ```bash
-   python skills/typst-renderer/scripts/compile.py \
-     data/job_applications/[job_id]/content.json \
-     [selected_template] \
-     data/job_applications/[job_id]/resume.pdf
+**Key principle**: Typst templates with auto-fit logic handle ALL page fitting automatically.
+
+1. **User selects Typst template** (or use default)
+   - Available templates: basic-resume, modern-resume
+   - Use `list_templates.py` to show options
+
+2. **Call `typst-renderer` skill** to compile
+   - Input: content.json (from Step 4), template name
+   - Process: JSON → Typst data → Compile with auto-fit
+   - Output: Single-page PDF (guaranteed) or overflow error
+
+3. **Auto-fit logic** (handled by typst-renderer):
    ```
-2. **Auto-fit handles page fitting**:
-   - Template adjusts font size (9-10.5pt) to fit content
-   - Compilation takes ~50-100ms
-   - Guaranteed single-page output
+   Start at 11pt font
+   If content overflows 1 page:
+       Reduce font by 0.5pt steps
+       Recompile
+       Repeat until fits or minimum (9pt) reached
+   If still overflows at 9pt:
+       Return error with recommendation
+   ```
 
-3. **Check compilation result**:
-   - ✅ Success → Continue to Step 6
-   - ⚠️ Font too small (<9pt) → Go to Step 5a
-   - ❌ Error → Debug and retry
-
-#### Step 5a: Content Trimming (If Needed)
-
-**Only if** auto-fit reports font dropped below 9pt:
-
-1. **Ask content-generator to trim** 2-3 bullet points:
-   - Remove least relevant bullets
-   - Keep all must-have skill demonstrations
-   - Focus on highest-impact achievements
-2. **Recompile** with trimmed content (Step 5)
-3. **Iterate max 2-3 times** (content should fit easily with reasonable volume)
-
-**Important**: This is NOT iterative compression like v1.0. It's a simple trim-and-recompile loop that typically completes in 1-2 iterations.
+4. **Handle result**:
+   - **Success**: PDF created, proceed to Step 6
+   - **Overflow**: Ask LLM to trim 2-3 bullets, regenerate JSON, retry compilation
 
 #### Step 6: Quality Check (SIMPLIFIED in v2.0)
 
-1. **Call `hr-critic` subagent** in `final_validation` mode
-   - Input: Resume content JSON (not PDF)
-   - Focus: Content quality ONLY (not formatting)
-   - Evaluate: Relevance, impact, keyword coverage, professionalism
-   - Output: Quality score (1-10), hire probability, ship/no-ship decision
+1. **Call `hr-critic` subagent** in `comprehensive` mode
+   - Input: content.json (evaluate content, not formatting)
+   - Output: Content quality scores, improvement suggestions
+   - Focus: Bullet impact, keyword coverage, professionalism
 
-2. **Decision logic**:
-   - Score ≥ 7.0 AND hire probability ≥ 0.70 → APPROVED
-   - Otherwise → NEEDS_REVISION
+2. **If quality issues identified**:
+   - Ask content-generator to improve specific bullets
+   - Regenerate JSON
+   - Recompile with typst-renderer
 
-3. **If NEEDS_REVISION**:
-   - Review HR Critic feedback
-   - Update content JSON (strengthen weak bullets)
-   - Recompile PDF (Step 5)
-   - Re-evaluate (Step 6)
+3. **Call `hr-critic` subagent** in `final_validation` mode
+   - Output: APPROVED / NEEDS_REVISION
+   - If APPROVED: Proceed to Step 7
+   - If NEEDS_REVISION: Iterate
 
-#### Step 7: Deliver PDF to User
+#### Step 7: Deliver PDF
 
-1. **Show final PDF path**: `data/job_applications/[job_id]/resume.pdf`
-2. **Display metrics**:
-   - HR Critic score: X/10
-   - Hire probability: XX%
-   - ATS keyword coverage: 100%
-   - Page count: 1
-   - Compilation time: ~XXms
-3. **Offer to open PDF** for user review
-4. **Done!**
+1. **Save final PDF**: `outputs/[job_id]/final_resume.pdf`
+2. **Generate coverage report**: Which skills are demonstrated where
+3. **Present to user**: PDF for job application submission
 
-## Workflow Diagram (v2.0)
+**Note**: Output is PDF only. No DOCX in v2.0 (Typst compiles directly to PDF).
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 1: Database Building (Unchanged from v1.0)                 │
-│                                                                   │
-│  DOCX Resume → resume-parser → JSON Database                     │
-│                 ↓                                                 │
-│            interview-conductor → Enriched Database                │
-└─────────────────────────────────────────────────────────────────┘
+## Available Subagents
 
-┌─────────────────────────────────────────────────────────────────┐
-│ PHASE 2: Resume Tailoring (SIGNIFICANTLY CHANGED in v2.0)        │
-│                                                                   │
-│  Job Description                                                  │
-│       ↓                                                           │
-│  ats-analyzer → Requirements JSON                                 │
-│       ↓                                                           │
-│  coverage-mapper → Coverage Matrix                                │
-│       ↓                                                           │
-│  [If gaps] → interview-conductor → Fill gaps → Re-map             │
-│       ↓                                                           │
-│  User selects template (NEW)                                      │
-│       ↓                                                           │
-│  content-generator → JSON content (NOT DOCX)                      │
-│       ↓                                          ↑                │
-│  typst-renderer → compile.py → PDF              │                │
-│       ↓                                          │                │
-│  Font too small? ──YES─→ Trim content ──────────┘                │
-│       │ NO                                                        │
-│       ↓                                                           │
-│  hr-critic → Quality validation                                   │
-│       ↓                                                           │
-│  Deliver PDF                                                      │
-└─────────────────────────────────────────────────────────────────┘
-```
+These specialized AI agents handle specific tasks. Always call subagents for their expertise:
 
-## Key Differences from v1.0
+### 1. resume-parser
+- **Purpose**: Parse DOCX resume files → structured JSON
+- **When to call**: User uploads a resume
+- **Tools**: docx skill, json-database skill
+- **Input**: DOCX file path
+- **Output**: Structured data (experiences, skills, projects, education)
 
-### What Changed
-
-| Aspect | v1.0 (DOCX) | v2.0 (Typst) |
-|--------|-------------|--------------|
-| **Output Format** | DOCX + PDF conversion | Pure PDF via Typst |
-| **Content Format** | Formatted DOCX | Structured JSON |
-| **Page Fitting** | Iterative compression (10+ iterations) | Auto-fit templates (0-2 iterations) |
-| **Word Counting** | Constant word tracking | Not needed |
-| **Compression** | `compression-strategist` agent | Simple trim-and-recompile |
-| **Rendering Speed** | Slow (DOCX → PDF conversion) | Fast (~50-100ms) |
-| **LLM Concerns** | Layout, fonts, spacing, word counts | Content quality only |
-| **Determinism** | Inconsistent (style drift) | Deterministic (same content → same PDF) |
-
-### What Was Removed
-
-- ❌ `word-counter` skill - Replaced by auto-fit
-- ❌ `compression-strategist` agent - Replaced by simple trimming
-- ❌ DOCX output pipeline - Pure Typst PDF now
-- ❌ Iterative compression loops - Auto-fit handles it
-- ❌ Style template matching - Typst templates define style
-- ❌ Word count targets - No longer relevant
-
-### What Was Added
-
-- ✅ `typst-renderer` skill - Complete PDF compilation pipeline
-- ✅ Template system - Modular, auto-fit Typst templates
-- ✅ Template selection step - User chooses design
-- ✅ JSON content format - Pure structured data
-- ✅ Auto-fit logic - Guaranteed single-page output
-- ✅ Fast compilation - ~50-100ms per resume
-
-## Agent Responsibilities (v2.0)
-
-### resume-parser
-- **Input**: DOCX file
-- **Output**: Structured JSON
-- **Changes**: None (unchanged from v1.0)
-
-### ats-analyzer
+### 2. ats-analyzer
+- **Purpose**: Analyze job descriptions to extract requirements
+- **When to call**: User uploads a job description
+- **Tools**: Text analysis
 - **Input**: Job description text
-- **Output**: Required skills, keywords, requirements
-- **Changes**: None (unchanged from v1.0)
+- **Output**: Required skills, keywords, experience requirements (categorized by importance)
 
-### coverage-mapper
+### 3. coverage-mapper
+- **Purpose**: Map user's experiences to job requirements
+- **When to call**: After JD analysis, to check skill coverage
+- **Tools**: coverage-tracker skill, json-database skill
 - **Input**: Database + JD requirements
-- **Output**: Coverage matrix, prioritization
-- **Changes**: Minor - removed word budget references
+- **Output**: Coverage matrix, gap analysis, experience prioritization
 
-### content-generator
+### 4. content-generator
+- **Purpose**: Generate tailored resume content as structured JSON
+- **When to call**: After coverage is complete (100%)
+- **Tools**: json-database skill
 - **Input**: Database, coverage matrix, JD analysis
-- **Output**: Structured JSON (MAJOR CHANGE from DOCX)
-- **Changes**: Now outputs pure JSON, no formatting concerns
+- **Output**: Structured JSON content (NOT DOCX) - see content_schema.json
+- **Note**: v2.0 changed to JSON output - no formatting decisions, pure content
 
-### hr-critic
-- **Input**: Content JSON
-- **Output**: Quality score, hire probability, ship/no-ship
-- **Changes**: Removed "triage" mode, evaluates content only
+### 5. hr-critic
+- **Purpose**: Evaluate resume CONTENT quality from HR perspective
+- **When to call**: After content generation for quality check
+- **Modes**:
+  - `comprehensive`: Content quality critique (NOT formatting)
+  - `final_validation`: Binary APPROVED/NEEDS_REVISION decision
+- **Input**: content.json (structured content), JD analysis, mode
+- **Output**: Quality scores, content improvement suggestions, hire probability
+- **Note**: v2.0 removed `triage` mode (no longer needed)
 
-### interview-conductor
-- **Input**: Database state, gaps
-- **Output**: Intelligent questions
-- **Changes**: None (unchanged from v1.0)
+### 7. interview-conductor
+- **Purpose**: Generate intelligent follow-up questions
+- **When to call**: After initial parsing, or when gaps are discovered
+- **Modes**:
+  - `initial_setup`: Deepen understanding after parsing
+  - `gap_filling`: Fill specific skill gaps for a job
+- **Input**: Database state, context (mode)
+- **Output**: List of questions
 
-## Skills Used (v2.0)
+## Custom Tool Skills
 
-### json-database (Unchanged)
-- Load/save resume database
-- Query experiences, skills, projects
-- Validate database structure
+These are reusable tools that subagents and the coordinator use:
 
-### typst-renderer (NEW)
-- **compile.py**: Main compilation orchestrator
-- **json_to_typst.py**: Convert JSON → Typst data
-- **validate_pdf.py**: Validate PDF page count
-- **list_templates.py**: Discover available templates
+### typst-renderer (NEW in v2.0)
+- **Purpose**: Compile structured JSON to single-page PDF using Typst templates
+- **Usage**: Render final resume with automatic page fitting
+- **Input**: content.json, template name
+- **Output**: Single-page PDF (guaranteed via auto-fit)
+- **Scripts**: compile.py, json_to_typst.py, validate_pdf.py, list_templates.py
 
-### coverage-tracker (Minor Changes)
-- Verify required skills are present
-- No longer interfaces with word counting
+### json-database
+- **Purpose**: Manage comprehensive resume database
+- **Usage**: Read/write structured data (experiences, skills, projects, education)
+- **Operations**: Load, update, query
+
+### coverage-tracker
+- **Purpose**: Verify skill coverage is maintained
+- **Usage**: Check if all required skills are present in resume
+- **Output**: Coverage percentage, missing skills
+
+## Built-in Skills (Already Available)
+
+### docx
+- **Location**: `/mnt/skills/public/docx/`
+- **Purpose**: Read, create, edit Word documents
+- **Used by**: resume-parser, content-generator, compression-strategist
+
+### pdf
+- **Location**: `/mnt/skills/public/pdf/`
+- **Purpose**: Convert DOCX to PDF
+- **Used by**: Final export step
+
+## Key Design Principles (v2.0 Updated)
+
+1. **LLM = Content Writer Only**: LLM generates content (JSON), Typst handles all layout
+2. **Typst = Layout Engineer**: Templates with auto-fit guarantee single-page output
+3. **No Layout Reasoning**: LLM never thinks about fonts, spacing, word counts, or page limits
+4. **HR is Authoritative**: HR Critic decides content quality, not formatting
+5. **Coverage is Sacred**: Never sacrifice required skills
+6. **Subagent Specialization**: Each subagent has one clear purpose
+7. **Progressive Workflow**: Setup once (Phase 1), tailor many times (Phase 2)
+8. **Deterministic Rendering**: Same content always produces same PDF
+
+## Page Fitting (v2.0)
+
+**Auto-Fit Logic**: Typst templates automatically adjust font size (11pt → 9pt) to fit content on exactly 1 page.
+
+- **No word counting needed** - Typst measures actual rendered content
+- **No guessing** - Compilation is deterministic and fast (~50-200ms)
+- **Overflow handling** - If content doesn't fit at minimum font (9pt), system provides specific recommendations ("reduce by 2-3 bullets")
+
+**Result**: Guaranteed single-page output or clear guidance for content adjustment.
+
+## File Structure
+
+```
+project_root/
+├── data/
+│   ├── comprehensive_db/
+│   │   ├── experiences.json
+│   │   ├── skills.json
+│   │   ├── projects.json
+│   │   ├── education.json
+│   │   └── metadata.json
+│   │
+│   ├── uploaded_resumes/
+│   │   └── *.docx                    # For Phase 1 parsing only
+│   │
+│   └── job_applications/
+│       └── [job_id]/
+│           ├── jd_original.txt
+│           ├── jd_analyzed.json
+│           ├── coverage_matrix.json
+│           └── content.json          # NEW: structured content (replaces DOCX)
+│
+├── templates/                         # NEW: Typst templates
+│   ├── basic-resume/
+│   │   ├── template.typ
+│   │   ├── preview.pdf
+│   │   └── metadata.json
+│   └── modern-resume/
+│       ├── template.typ
+│       ├── preview.pdf
+│       └── metadata.json
+│
+└── outputs/
+    └── [job_id]/
+        ├── final_resume.pdf           # NEW: PDF output (no DOCX in v2.0)
+        └── coverage_report.json
+```
+
+## Usage Examples
+
+### Initial Setup
+```
+User: "I want to build my resume database from my existing resumes"
+Claude: [Uses rescume skill]
+Claude: [Calls resume-parser subagent for each uploaded file]
+Claude: [Calls interview-conductor subagent]
+Claude: "I have some questions to better understand your experience..."
+[User answers questions]
+Claude: "Your resume database is ready with 5 experiences, 15 skills, and 3 projects"
+```
+
+### Tailor for New Job
+```
+User: "Tailor my resume for this Senior Data Analyst role at PCI Energy"
+Claude: [Uses rescume skill]
+Claude: [Calls ats-analyzer subagent]
+Claude: [Calls coverage-mapper subagent → finds 90% coverage, missing Kubernetes]
+Claude: "This role requires Kubernetes. Do you have container orchestration experience?"
+User: "Yes, I used Docker extensively at Company X"
+Claude: [Updates database, re-runs coverage-mapper → 100%]
+Claude: [Calls content-generator subagent]
+Claude: [Calls hr-critic subagent → gets feedback]
+Claude: [Applies improvements, now 550 words]
+Claude: [Calls compression-strategist subagent iteratively]
+Claude: "Draft v3 ready (485 words). Please review: does it look like one page?"
+User: "Perfect!"
+Claude: [Calls hr-critic in final_validation mode → APPROVED]
+Claude: "Here's your tailored resume for PCI Energy [DOCX + PDF]"
+```
 
 ## Error Handling
 
-### Common Issues
+- **No DOCX uploaded**: Ask user to upload DOCX files (not PDF)
+- **Cannot achieve coverage**: Inform user which skills are missing, suggest alternatives
+- **Cannot compress to 1 page**: Call hr-critic in triage mode for strategic decisions
+- **User rejects final draft**: Iterate based on specific feedback
 
-**"Typst CLI not found"**
-```bash
-brew install typst  # macOS
-# Or visit https://typst.app
-```
+## Notes
 
-**"Content overflows 1 page"**
-- Auto-fit reduced font to minimum but still doesn't fit
-- Solution: Trim 2-3 bullet points and recompile
-- Rare: Usually only happens with >25 bullets
+- **DOCX only**: PDF input not supported (no reliable format preservation)
+- **Iterative by design**: System expects multiple rounds of feedback
+- **Transparent**: Word count tracking and iteration logs show all decisions
+- **Growing database**: Each new job enriches the comprehensive database
+- **Privacy**: All data stored locally, never transmitted
 
-**"Invalid JSON schema"**
-- Content generator produced malformed JSON
-- Solution: Validate JSON, regenerate if needed
+## Next Steps After Using This Skill
 
-**"Template not found"**
-- Selected template doesn't exist
-- Solution: Run `list_templates.py` to see available options
-
-## Performance Expectations
-
-| Operation | v1.0 Time | v2.0 Time | Improvement |
-|-----------|-----------|-----------|-------------|
-| Content generation | ~10s | ~5s | 2x faster |
-| Page fitting | ~2-5min (10+ iterations) | ~100ms (auto-fit) | **30x faster** |
-| PDF rendering | ~5-10s | ~50-100ms | **100x faster** |
-| **Total Phase 2** | ~3-6min | ~15-30s | **12x faster** |
-
-## User Experience Flow
-
-### Typical Session (v2.0)
-
-```
-User: "Tailor my resume for this Data Scientist role at TechCorp"
-
-Rescume:
-✓ Analyzing job description...
-✓ Mapped experiences (100% coverage)
-✓ Available templates:
-  1. simple-technical-resume (ATS-friendly, clean)
-  [More templates coming soon]
-
-Select template (or press Enter for default): [User presses Enter]
-
-✓ Generating tailored content...
-✓ Compiling PDF with Typst...
-✓ Resume rendered (1 page, 10.2pt font)
-✓ HR Critic score: 8.5/10
-✓ Hire probability: 85%
-
-📄 Your resume: data/job_applications/techcorp_ds_2026/resume.pdf
-```
-
-**Total time: ~20 seconds**
-
-### If Content Trimming Needed
-
-```
-⚠ Auto-fit used minimum font (9pt) but content still overflows.
-
-Trimming 3 less relevant bullet points...
-
-✓ Recompiling...
-✓ Resume rendered (1 page, 9.5pt font)
-✓ All required skills still covered
-
-📄 Your resume: data/job_applications/techcorp_ds_2026/resume.pdf
-```
-
-**Additional time: ~5 seconds**
-
-## Success Criteria
-
-After Phase 2 completion, verify:
-
-- ✅ PDF exists at output path
-- ✅ Page count = 1
-- ✅ HR Critic score ≥ 7.0
-- ✅ Hire probability ≥ 0.70
-- ✅ All required skills demonstrated
-- ✅ ATS keywords present
-- ✅ Font size ≥ 9pt
-- ✅ Professional, readable formatting
-
-## Tips for Users
-
-### Getting Best Results
-
-**Phase 1 (Database Building):**
-- Upload all your resumes (job-specific versions are valuable)
-- Answer follow-up questions thoroughly
-- Include metrics and quantifiable achievements
-- Don't worry about formatting—focus on content
-
-**Phase 2 (Tailoring):**
-- Provide complete job description (more detail = better tailoring)
-- Trust the auto-fit—don't manually limit content
-- Review HR Critic feedback to improve database
-- Save good tailored resumes for future reference
-
-### Iteration is Fast
-
-Unlike v1.0, iteration in v2.0 is **extremely fast** (~100ms per compile):
-- Want to try different template? Recompile instantly
-- Want to adjust a bullet? Recompile instantly
-- Want to add a project? Recompile instantly
-
-Don't be afraid to experiment—the pipeline is designed for rapid iteration.
-
-## Future Enhancements
-
-Planned for future releases:
-- **More templates** - Multiple professional designs
-- **Template customization** - User-defined color schemes, fonts
-- **Multi-page CVs** - Option for academic/research CVs
-- **PDF parsing** - Accept PDF resumes as input
-- **LinkedIn import** - Pull from LinkedIn profile
-- **Cover letter generation** - Matching cover letters
-
-## See Also
-
-- **[CHANGELOG.md](../../CHANGELOG.md)** - Version history
-- **[templates/README.md](../../templates/README.md)** - Template authoring
-- **[skills/typst-renderer/SKILL.md](../typst-renderer/SKILL.md)** - Rendering pipeline
-- **[agents/content-generator.md](../../agents/content-generator.md)** - JSON schema
-
----
-
-**Remember**: v2.0 is about **simplicity and speed**. The LLM writes great content, Typst renders it beautifully, auto-fit ensures it fits, and you get a professional PDF in seconds. No word counting, no compression struggles, no layout headaches.
+After successfully tailoring a resume, suggest:
+1. "Would you like to tailor this for another job?"
+2. "Should I update your database with any new skills you've gained?"
+3. "Want to review the coverage report to see which experiences were prioritized?"

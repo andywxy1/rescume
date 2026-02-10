@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
-Template Lister
+Template Manager Script for Rescume v2.0
+
 Lists all available Typst resume templates with their metadata.
+
+Usage:
+    list_templates.py [--json]
 """
 
 import json
@@ -10,134 +14,116 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 
-def list_templates(plugin_root: Path = None) -> List[Dict[str, Any]]:
-    """
-    List all available Typst templates.
+TEMPLATES_DIR = Path.home() / ".claude" / "skills" / "rescume" / "templates"
 
-    Args:
-        plugin_root: Root directory of rescume plugin (auto-detected if None)
+
+def list_templates() -> List[Dict[str, Any]]:
+    """
+    Scan templates directory and return list of available templates.
 
     Returns:
         List of template metadata dictionaries
     """
-    if plugin_root is None:
-        plugin_root = Path(__file__).parent.parent.parent.parent
-    plugin_root = Path(plugin_root)
-
-    templates_dir = plugin_root / "templates"
-
-    if not templates_dir.exists():
-        return []
-
     templates = []
 
-    for template_dir in sorted(templates_dir.iterdir()):
-        if not template_dir.is_dir():
+    if not TEMPLATES_DIR.exists():
+        return templates
+
+    # Scan for template directories
+    for item in TEMPLATES_DIR.iterdir():
+        if not item.is_dir():
             continue
 
-        # Skip hidden directories and README
-        if template_dir.name.startswith('.') or template_dir.name == 'README.md':
+        if item.name.startswith('.'):
             continue
 
         # Check for required files
-        metadata_file = template_dir / "metadata.json"
-        template_file = template_dir / "template.typ"
+        template_typ = item / "template.typ"
+        metadata_json = item / "metadata.json"
 
-        if not template_file.exists():
-            continue
+        if not template_typ.exists():
+            continue  # Not a valid template
 
         # Load metadata if available
         metadata = {
-            "name": template_dir.name,
-            "displayName": template_dir.name.replace('-', ' ').title(),
+            "name": item.name,
             "description": "No description available",
-            "available": True
+            "template_file": str(template_typ),
+            "preview": None,
+            "default_font": "Unknown",
+            "default_font_size": "11pt",
+            "min_font_size": "9pt"
         }
 
-        if metadata_file.exists():
+        if metadata_json.exists():
             try:
-                with open(metadata_file, 'r', encoding='utf-8') as f:
-                    file_metadata = json.load(f)
-                    metadata.update(file_metadata)
+                with open(metadata_json, 'r', encoding='utf-8') as f:
+                    loaded_metadata = json.load(f)
+                    metadata.update(loaded_metadata)
+
             except Exception as e:
-                metadata["error"] = f"Failed to load metadata: {e}"
+                metadata["metadata_error"] = str(e)
 
         # Check for preview
-        preview_file = template_dir / "example.pdf"
-        if preview_file.exists():
-            metadata["preview"] = str(preview_file)
-        else:
-            metadata["preview"] = None
+        preview_pdf = item / "preview.pdf"
+        if preview_pdf.exists():
+            metadata["preview"] = str(preview_pdf)
 
         templates.append(metadata)
+
+    # Sort by name
+    templates.sort(key=lambda t: t["name"])
 
     return templates
 
 
-def print_templates(templates: List[Dict[str, Any]], verbose: bool = False):
-    """Print templates in a human-readable format."""
-    if not templates:
-        print("No templates found.")
-        return
+def format_template_info(template: Dict[str, Any]) -> str:
+    """Format template info as human-readable text."""
+    lines = []
+    lines.append(f"• {template['name']}")
+    lines.append(f"  Description: {template['description']}")
+    lines.append(f"  Font: {template['default_font']} ({template['default_font_size']})")
 
-    print(f"Available Templates ({len(templates)}):\n")
+    if template.get("color_theme"):
+        lines.append(f"  Theme: {template['color_theme']}")
 
-    for i, template in enumerate(templates, 1):
-        print(f"{i}. {template['displayName']}")
-        print(f"   Name: {template['name']}")
+    if template.get("preview"):
+        lines.append(f"  Preview: {template['preview']}")
 
-        if verbose:
-            print(f"   Description: {template.get('description', 'N/A')}")
+    if template.get("metadata_error"):
+        lines.append(f"  ⚠️  Warning: {template['metadata_error']}")
 
-            if 'version' in template:
-                print(f"   Version: {template['version']}")
-
-            if 'author' in template:
-                print(f"   Author: {template['author']}")
-
-            if 'features' in template:
-                print(f"   Features:")
-                for feature in template['features']:
-                    print(f"     - {feature}")
-
-            if 'defaultFontSize' in template:
-                print(f"   Default Font: {template['defaultFontSize']}")
-                print(f"   Min Font: {template.get('minFontSize', 'N/A')}")
-
-            if 'recommendedFor' in template:
-                print(f"   Best for: {template['recommendedFor']}")
-
-            if template.get('preview'):
-                print(f"   Preview: {template['preview']}")
-
-            if 'error' in template:
-                print(f"   ⚠ Warning: {template['error']}")
-
-        else:
-            # Compact format
-            desc = template.get('description', '')
-            if len(desc) > 60:
-                desc = desc[:57] + "..."
-            print(f"   {desc}")
-
-        print()  # Blank line between templates
+    return "\n".join(lines)
 
 
 def main():
     """CLI entry point."""
-    verbose = '--verbose' in sys.argv or '-v' in sys.argv
+    json_output = "--json" in sys.argv
 
-    # List templates
     templates = list_templates()
 
-    if '--json' in sys.argv:
-        # JSON output for programmatic use
+    if not templates:
+        print("No templates found.", file=sys.stderr)
+        print(f"Template directory: {TEMPLATES_DIR}", file=sys.stderr)
+        sys.exit(1)
+
+    if json_output:
+        # JSON output
         print(json.dumps(templates, indent=2))
     else:
         # Human-readable output
-        print_templates(templates, verbose=verbose)
+        print(f"Available resume templates ({len(templates)}):\n")
+        for template in templates:
+            print(format_template_info(template))
+            print()
 
-    sys.exit(0 if templates else 1)
+        print(f"Template directory: {TEMPLATES_DIR}")
+        print("\nUsage:")
+        print("  compile.py <content.json> <template-name> <output.pdf>")
+        print("\nExample:")
+        print(f"  compile.py resume.json {templates[0]['name']} final.pdf")
+
+    sys.exit(0)
 
 
 if __name__ == "__main__":

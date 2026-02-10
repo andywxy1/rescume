@@ -1,249 +1,309 @@
 #!/usr/bin/env python3
 """
-Typst Resume Compiler
-Orchestrates the compilation of JSON resume data into PDF using Typst templates.
+Typst Resume Compilation Script for Rescume v2.0
+
+Main orchestrator for compiling structured JSON resume content into
+single-page PDF using Typst templates with automatic font size adjustment.
+
+Usage:
+    compile.py <content.json> <template-name> <output.pdf>
 """
 
 import json
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Tuple
 
-# Import sibling modules
 try:
-    from json_to_typst import json_to_typst
-    from validate_pdf import validate_pdf
+    import pdfplumber
 except ImportError:
-    # If running as script, add parent dir to path
-    sys.path.insert(0, str(Path(__file__).parent))
-    from json_to_typst import json_to_typst
-    from validate_pdf import validate_pdf
+    print("Error: pdfplumber not installed. Run: pip install pdfplumber", file=sys.stderr)
+    sys.exit(1)
 
 
-def find_typst_binary() -> Optional[str]:
-    """Find Typst CLI binary in system PATH."""
-    import shutil
-    typst_path = shutil.which("typst")
-    if not typst_path:
-        # Check common installation locations
-        common_paths = [
-            "/opt/homebrew/bin/typst",  # macOS Homebrew (Apple Silicon)
-            "/usr/local/bin/typst",      # macOS Homebrew (Intel) / Linux
-            Path.home() / ".local" / "bin" / "typst",  # Linux user install
-        ]
-        for path in common_paths:
-            if Path(path).exists():
-                return str(path)
-    return typst_path
+# Configuration
+TYPST_CLI = Path.home() / ".local" / "bin" / "typst"
+TEMPLATES_DIR = Path.home() / ".claude" / "skills" / "rescume" / "templates"
+MIN_FONT_SIZE = 9.0
+MAX_FONT_SIZE = 11.0
+FONT_STEP = 0.5
 
 
-def compile_resume(
-    content_json_path: Path,
-    template_name: str,
-    output_pdf_path: Path,
-    plugin_root: Optional[Path] = None,
-    typst_binary: Optional[str] = None,
-    min_font_size: float = 9.0
-) -> Dict[str, Any]:
-    """
-    Compile resume JSON to PDF using specified Typst template.
-
-    Args:
-        content_json_path: Path to JSON file with resume data
-        template_name: Name of template in templates/ directory
-        output_pdf_path: Path for output PDF
-        plugin_root: Root directory of rescume plugin (auto-detected if None)
-        typst_binary: Path to typst binary (auto-detected if None)
-        min_font_size: Minimum acceptable font size after auto-fit
-
-    Returns:
-        Dictionary with compilation result:
-        {
-            "success": bool,
-            "output": str (path to PDF),
-            "pages": int,
-            "errors": list,
-            "warnings": list,
-            "font_size": float (estimated)
-        }
-    """
-    result = {
-        "success": False,
-        "output": None,
-        "pages": 0,
-        "errors": [],
-        "warnings": [],
-        "font_size": None
-    }
-
-    # Find plugin root
-    if plugin_root is None:
-        plugin_root = Path(__file__).parent.parent.parent.parent
-    plugin_root = Path(plugin_root)
-
-    # Find Typst binary
-    if typst_binary is None:
-        typst_binary = find_typst_binary()
-        if not typst_binary:
-            result["errors"].append(
-                "Typst CLI not found. Install with: brew install typst (macOS) "
-                "or visit https://github.com/typst/typst"
-            )
-            return result
-
-    # Validate inputs
-    if not content_json_path.exists():
-        result["errors"].append(f"Content JSON not found: {content_json_path}")
-        return result
-
-    templates_dir = plugin_root / "templates"
-    template_dir = templates_dir / template_name
-
-    if not template_dir.exists():
-        result["errors"].append(f"Template not found: {template_name}")
-        result["errors"].append(f"Available templates: {', '.join([d.name for d in templates_dir.iterdir() if d.is_dir()])}")
-        return result
-
-    template_file = template_dir / "template.typ"
-    if not template_file.exists():
-        result["errors"].append(f"Template file not found: {template_file}")
-        return result
-
-    # Load JSON content
+def get_pdf_page_count(pdf_path: Path) -> int:
+    """Get number of pages in PDF."""
     try:
-        with open(content_json_path, 'r', encoding='utf-8') as f:
-            content_data = json.load(f)
+        with pdfplumber.open(pdf_path) as pdf:
+            return len(pdf.pages)
+    except Exception as e:
+        print(f"Error reading PDF: {e}", file=sys.stderr)
+        return -1
+
+
+def load_json_content(json_path: Path) -> Dict[str, Any]:
+    """Load and validate JSON content."""
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        # Basic validation
+        if not isinstance(data, dict):
+            raise ValueError("JSON must be an object/dictionary")
+
+        if "header" not in data:
+            raise ValueError("JSON must contain 'header' field")
+
+        return data
+
     except json.JSONDecodeError as e:
-        result["errors"].append(f"Invalid JSON: {e}")
-        return result
+        print(f"Error: Invalid JSON: {e}", file=sys.stderr)
+        sys.exit(3)
     except Exception as e:
-        result["errors"].append(f"Failed to load JSON: {e}")
-        return result
+        print(f"Error loading JSON: {e}", file=sys.stderr)
+        sys.exit(2)
 
-    # Convert JSON to Typst data file (create in plugin root for easier access)
-    try:
-        typst_data = json_to_typst(content_data)
-        data_file = plugin_root / "data.typ"
-        with open(data_file, 'w', encoding='utf-8') as f:
-            f.write(typst_data)
-    except Exception as e:
-        result["errors"].append(f"Failed to convert JSON to Typst: {e}")
-        return result
 
-    # Create main.typ in plugin root that imports template and data
-    main_typ = plugin_root / "main.typ"
-    # Use relative paths from plugin root
-    template_rel = template_file.relative_to(plugin_root)
-    main_content = f"""// Auto-generated main file
-#import "{template_rel}": *
-#import "data.typ": resume-data
+def create_typst_main_file(template_name: str, data_typ_filename: str,
+                           template_typ_filename: str, font_size: float) -> str:
+    """
+    Create main Typst file that imports template and data.
+    Assumes template and data files are copied into the same directory.
 
-// Render resume with auto-fit
-#auto-fit-resume(resume-data, min-font-size: {min_font_size}pt)
+    Returns the Typst content as a string.
+    """
+    typst_content = f"""// Main resume file - auto-generated
+#import "{template_typ_filename}": resume
+#import "{data_typ_filename}": resume_data
+
+// Call template with data and font size
+// Note: Typst function calls need exact parameter matching
+#resume(
+  font-size: {font_size}pt,
+  name: resume_data.header.name,
+  email: resume_data.header.at("email", default: none),
+  phone: resume_data.header.at("phone", default: none),
+  location: resume_data.header.at("location", default: none),
+  linkedin: resume_data.header.at("linkedin", default: none),
+  github: resume_data.header.at("github", default: none),
+  website: resume_data.header.at("website", default: none),
+  summary: resume_data.at("summary", default: none),
+  education: resume_data.at("education", default: ()),
+  experience: resume_data.at("experience", default: ()),
+  projects: resume_data.at("projects", default: ()),
+  skills: resume_data.at("skills", default: none),
+)
 """
-    try:
-        with open(main_typ, 'w', encoding='utf-8') as f:
-            f.write(main_content)
-    except Exception as e:
-        result["errors"].append(f"Failed to create main.typ: {e}")
-        return result
+    return typst_content
 
-    # Compile with Typst (run from plugin root)
+
+def compile_typst(main_typ_path: Path, output_pdf_path: Path) -> Tuple[bool, str]:
+    """
+    Compile Typst file to PDF.
+
+    Returns: (success: bool, error_message: str)
+    """
     try:
-        compile_result = subprocess.run(
-            [typst_binary, "compile", "main.typ", str(output_pdf_path.absolute())],
+        result = subprocess.run(
+            [str(TYPST_CLI), "compile", str(main_typ_path), str(output_pdf_path)],
             capture_output=True,
             text=True,
-            timeout=30,
-            cwd=plugin_root
+            timeout=30
         )
 
-        if compile_result.returncode != 0:
-            result["errors"].append(f"Typst compilation failed:\n{compile_result.stderr}")
-            return result
+        if result.returncode != 0:
+            return False, result.stderr
+
+        return True, ""
 
     except subprocess.TimeoutExpired:
-        result["errors"].append("Typst compilation timed out (30s limit)")
-        return result
+        return False, "Compilation timed out (>30s)"
+    except FileNotFoundError:
+        return False, f"Typst CLI not found at {TYPST_CLI}. Is it installed?"
     except Exception as e:
-        result["errors"].append(f"Failed to run Typst: {e}")
-        return result
-    finally:
-        # Clean up temp files
-        try:
-            if data_file.exists():
-                data_file.unlink()
-            if main_typ.exists():
-                main_typ.unlink()
-        except:
-            pass  # Ignore cleanup errors
+        return False, str(e)
 
-    # Validate output PDF
-    try:
-        pdf_result = validate_pdf(output_pdf_path, max_pages=1)
-        result["pages"] = pdf_result["pages"]
-        result["warnings"].extend(pdf_result["warnings"])
 
-        if not pdf_result["valid"]:
-            result["errors"].extend(pdf_result["errors"])
-            # If only error is page count, this is a soft error
-            if len(pdf_result["errors"]) == 1 and "pages" in pdf_result["errors"][0].lower():
-                result["warnings"].append(
-                    "Resume content overflows 1 page. Consider trimming content or "
-                    "reducing font size further."
-                )
+def auto_fit_compile(
+    content_json_path: Path,
+    template_name: str,
+    output_pdf_path: Path
+) -> Dict[str, Any]:
+    """
+    Compile resume with automatic font size adjustment to fit 1 page.
+
+    Returns result dictionary with status and metadata.
+    """
+    start_time = time.time()
+
+    # Load JSON content
+    json_data = load_json_content(content_json_path)
+
+    # Create temporary working directory
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+
+        # Step 1: Convert JSON to Typst data
+        json_to_typst_script = Path(__file__).parent / "json_to_typst.py"
+        data_typ_path = tmpdir_path / "data.typ"
+
+        result = subprocess.run(
+            [sys.executable, str(json_to_typst_script),
+             str(content_json_path), str(data_typ_path)],
+            capture_output=True,
+            text=True
+        )
+
+        if result.returncode != 0:
+            return {
+                "success": False,
+                "error": "Failed to convert JSON to Typst",
+                "details": result.stderr
+            }
+
+        # Copy template file to temp directory
+        template_source = TEMPLATES_DIR / template_name / "template.typ"
+        if not template_source.exists():
+            return {
+                "success": False,
+                "error": f"Template not found: {template_source}"
+            }
+
+        import shutil
+        template_typ_path = tmpdir_path / "template.typ"
+        shutil.copy(template_source, template_typ_path)
+
+        # Step 2: Auto-fit loop
+        current_font = MAX_FONT_SIZE
+        iterations = 0
+        max_iterations = int((MAX_FONT_SIZE - MIN_FONT_SIZE) / FONT_STEP) + 1
+
+        while current_font >= MIN_FONT_SIZE and iterations < max_iterations:
+            iterations += 1
+
+            # Create main Typst file with current font size
+            main_content = create_typst_main_file(
+                template_name, "data.typ", "template.typ", current_font
+            )
+
+            main_typ_path = tmpdir_path / "main.typ"
+            with open(main_typ_path, 'w', encoding='utf-8') as f:
+                f.write(main_content)
+
+            # Compile
+            temp_pdf = tmpdir_path / f"output_{current_font}.pdf"
+            success, error_msg = compile_typst(main_typ_path, temp_pdf)
+
+            if not success:
+                return {
+                    "success": False,
+                    "error": f"Compilation failed at font size {current_font}pt",
+                    "details": error_msg
+                }
+
+            # Check page count
+            pages = get_pdf_page_count(temp_pdf)
+
+            if pages < 0:
+                return {
+                    "success": False,
+                    "error": "Failed to read output PDF"
+                }
+
+            if pages == 1:
+                # Success! Copy to final output
+                shutil.copy(temp_pdf, output_pdf_path)
+
+                elapsed_ms = int((time.time() - start_time) * 1000)
+
+                return {
+                    "success": True,
+                    "pages": 1,
+                    "font_size_used": current_font,
+                    "output_path": str(output_pdf_path),
+                    "iterations": iterations,
+                    "compilation_time_ms": elapsed_ms
+                }
+
+            elif pages > 1:
+                # Too much content, try smaller font
+                current_font -= FONT_STEP
+                current_font = round(current_font, 1)  # Avoid floating point issues
             else:
-                return result
+                # Should not happen (0 pages)
+                return {
+                    "success": False,
+                    "error": f"Unexpected page count: {pages}"
+                }
 
-    except Exception as e:
-        result["warnings"].append(f"PDF validation skipped: {e}")
+        # If we get here, couldn't fit even at minimum font
+        elapsed_ms = int((time.time() - start_time) * 1000)
 
-    # Success!
-    result["success"] = True
-    result["output"] = str(output_pdf_path)
+        # Estimate how much content to remove
+        final_pages = get_pdf_page_count(temp_pdf)
+        overflow_ratio = (final_pages - 1.0) / 1.0
+        bullets_to_remove = max(2, int(overflow_ratio * 10))
 
-    return result
+        return {
+            "success": False,
+            "status": "overflow",
+            "pages": final_pages,
+            "min_font_reached": MIN_FONT_SIZE,
+            "iterations": iterations,
+            "compilation_time_ms": elapsed_ms,
+            "recommendation": f"Content still overflows at minimum font size ({MIN_FONT_SIZE}pt). "
+                            f"Please reduce content by approximately {bullets_to_remove}-{bullets_to_remove + 1} bullet points."
+        }
 
 
 def main():
     """CLI entry point."""
-    if len(sys.argv) < 4:
-        print("Usage: python compile.py <content.json> <template_name> <output.pdf> [min_font_size]", file=sys.stderr)
-        print("\nExample:", file=sys.stderr)
-        print("  python compile.py resume.json simple-technical-resume output.pdf", file=sys.stderr)
-        print("  python compile.py resume.json simple-technical-resume output.pdf 9.0", file=sys.stderr)
+    if len(sys.argv) != 4:
+        print("Usage: compile.py <content.json> <template-name> <output.pdf>")
+        print("\nExample:")
+        print("  compile.py resume_content.json basic-resume final_resume.pdf")
+        print("\nAvailable templates:")
+        print("  - basic-resume")
+        print("  - modern-resume")
         sys.exit(1)
 
-    content_json = Path(sys.argv[1])
+    content_json_path = Path(sys.argv[1])
     template_name = sys.argv[2]
-    output_pdf = Path(sys.argv[3])
-    min_font_size = float(sys.argv[4]) if len(sys.argv) > 4 else 9.0
+    output_pdf_path = Path(sys.argv[3])
 
-    # Compile
-    result = compile_resume(content_json, template_name, output_pdf, min_font_size=min_font_size)
+    if not content_json_path.exists():
+        print(f"Error: Content file not found: {content_json_path}", file=sys.stderr)
+        sys.exit(2)
 
-    # Print results
+    # Verify template exists
+    template_dir = TEMPLATES_DIR / template_name
+    if not template_dir.exists():
+        print(f"Error: Template not found: {template_name}", file=sys.stderr)
+        print(f"Template directory should be at: {template_dir}", file=sys.stderr)
+        sys.exit(2)
+
+    print(f"Compiling resume...")
+    print(f"  Content: {content_json_path}")
+    print(f"  Template: {template_name}")
+    print(f"  Output: {output_pdf_path}")
+    print()
+
+    # Compile with auto-fit
+    result = auto_fit_compile(content_json_path, template_name, output_pdf_path)
+
+    # Output result
+    print(json.dumps(result, indent=2))
+
     if result["success"]:
-        print(f"✓ Resume compiled successfully")
-        print(f"  Output: {result['output']}")
-        print(f"  Pages: {result['pages']}")
-        if result["warnings"]:
-            print("\n⚠ Warnings:")
-            for warning in result["warnings"]:
-                print(f"  - {warning}")
+        print(f"\n✓ Success! Resume compiled to {output_pdf_path}")
+        print(f"  Font size: {result['font_size_used']}pt")
+        print(f"  Time: {result['compilation_time_ms']}ms")
         sys.exit(0)
     else:
-        print(f"✗ Compilation failed")
-        if result["errors"]:
-            print("\nErrors:")
-            for error in result["errors"]:
-                print(f"  - {error}")
-        if result["warnings"]:
-            print("\nWarnings:")
-            for warning in result["warnings"]:
-                print(f"  - {warning}")
+        print(f"\n✗ Compilation failed", file=sys.stderr)
+        if "recommendation" in result:
+            print(f"  {result['recommendation']}", file=sys.stderr)
         sys.exit(1)
 
 

@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
-PDF Validation Script
-Checks PDF page count and other properties for resume validation.
+PDF Validation Script for Rescume v2.0
+
+Validates output PDFs: checks page count, readability, and metadata.
+
+Usage:
+    validate_pdf.py <pdf_file>
 """
 
+import json
 import sys
 from pathlib import Path
+from typing import Dict, Any
 
 try:
     import pdfplumber
@@ -14,125 +20,108 @@ except ImportError:
     sys.exit(1)
 
 
-def validate_pdf(pdf_path: Path, max_pages: int = 1) -> dict:
+def validate_pdf(pdf_path: Path) -> Dict[str, Any]:
     """
-    Validate a PDF file for resume requirements.
-
-    Args:
-        pdf_path: Path to PDF file
-        max_pages: Maximum allowed pages (default: 1)
+    Validate a PDF file.
 
     Returns:
-        Dictionary with validation results:
-        {
-            "valid": bool,
-            "pages": int,
-            "errors": list of str,
-            "warnings": list of str
-        }
+        Dictionary with validation results
     """
     result = {
-        "valid": True,
+        "valid": False,
         "pages": 0,
-        "errors": [],
-        "warnings": []
+        "readable": False,
+        "file_size_kb": 0.0,
+        "errors": []
     }
 
     # Check file exists
     if not pdf_path.exists():
-        result["valid"] = False
-        result["errors"].append(f"PDF file not found: {pdf_path}")
+        result["errors"].append(f"File not found: {pdf_path}")
         return result
 
-    # Check file is not empty
-    if pdf_path.stat().st_size == 0:
-        result["valid"] = False
-        result["errors"].append("PDF file is empty")
-        return result
-
+    # Check file size
     try:
-        # Open PDF and check page count
-        with pdfplumber.open(pdf_path) as pdf:
-            page_count = len(pdf.pages)
-            result["pages"] = page_count
+        file_size_bytes = pdf_path.stat().st_size
+        result["file_size_kb"] = round(file_size_bytes / 1024, 2)
 
-            # Validate page count
-            if page_count == 0:
-                result["valid"] = False
-                result["errors"].append("PDF has no pages")
-            elif page_count > max_pages:
-                result["valid"] = False
-                result["errors"].append(
-                    f"PDF has {page_count} pages (maximum: {max_pages}). "
-                    "Content needs to be trimmed or font size reduced."
-                )
+        if file_size_bytes == 0:
+            result["errors"].append("File is empty (0 bytes)")
+            return result
 
-            # Check if pages have content
-            for i, page in enumerate(pdf.pages, 1):
-                text = page.extract_text()
-                if not text or len(text.strip()) < 10:
-                    result["warnings"].append(f"Page {i} appears to be empty or has very little content")
-
-            # Additional validations
-            if page_count == 1:
-                # Check approximate content density
-                first_page = pdf.pages[0]
-                text = first_page.extract_text() or ""
-                word_count = len(text.split())
-
-                if word_count < 100:
-                    result["warnings"].append(
-                        f"Resume seems very short ({word_count} words). "
-                        "Consider adding more detail."
-                    )
-                elif word_count > 600:
-                    result["warnings"].append(
-                        f"Resume is very dense ({word_count} words). "
-                        "Ensure readability with adequate spacing and font size."
-                    )
+        if file_size_bytes > 10 * 1024 * 1024:  # 10 MB
+            result["errors"].append(f"File is unusually large: {result['file_size_kb']} KB")
 
     except Exception as e:
-        result["valid"] = False
-        result["errors"].append(f"Failed to read PDF: {str(e)}")
+        result["errors"].append(f"Could not read file size: {e}")
+        return result
+
+    # Try to open and read PDF
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            # Get page count
+            result["pages"] = len(pdf.pages)
+
+            if result["pages"] == 0:
+                result["errors"].append("PDF has no pages")
+                return result
+
+            # Try to extract text from first page as readability check
+            try:
+                first_page = pdf.pages[0]
+                text = first_page.extract_text()
+
+                if text and len(text.strip()) > 0:
+                    result["readable"] = True
+                else:
+                    result["errors"].append("Could not extract text from PDF")
+
+            except Exception as e:
+                result["errors"].append(f"Error reading PDF content: {e}")
+
+    except Exception as e:
+        result["errors"].append(f"Could not open PDF: {e}")
+        return result
+
+    # Overall validity
+    result["valid"] = (
+        result["pages"] > 0 and
+        result["readable"] and
+        len(result["errors"]) == 0
+    )
 
     return result
 
 
 def main():
     """CLI entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: python validate_pdf.py <resume.pdf> [max_pages]", file=sys.stderr)
-        print("\nExample:", file=sys.stderr)
-        print("  python validate_pdf.py resume.pdf      # Validates 1-page max", file=sys.stderr)
-        print("  python validate_pdf.py resume.pdf 2    # Validates 2-page max", file=sys.stderr)
+    if len(sys.argv) != 2:
+        print("Usage: validate_pdf.py <pdf_file>")
+        print("\nValidates a PDF file and reports:")
+        print("  - Page count")
+        print("  - Readability (can extract text)")
+        print("  - File size")
+        print("  - Any errors or warnings")
         sys.exit(1)
 
     pdf_path = Path(sys.argv[1])
-    max_pages = int(sys.argv[2]) if len(sys.argv) > 2 else 1
 
-    # Validate PDF
-    result = validate_pdf(pdf_path, max_pages)
+    # Validate
+    result = validate_pdf(pdf_path)
 
-    # Print results
+    # Output result as JSON
+    print(json.dumps(result, indent=2))
+
+    # Summary
     if result["valid"]:
-        print(f"✓ PDF validation passed")
-        print(f"  Pages: {result['pages']}/{max_pages}")
-        if result["warnings"]:
-            print("\n⚠ Warnings:")
-            for warning in result["warnings"]:
-                print(f"  - {warning}")
+        print(f"\n✓ PDF is valid", file=sys.stderr)
+        print(f"  Pages: {result['pages']}", file=sys.stderr)
+        print(f"  Size: {result['file_size_kb']} KB", file=sys.stderr)
         sys.exit(0)
     else:
-        print(f"✗ PDF validation failed")
-        print(f"  Pages: {result['pages']}/{max_pages}")
-        if result["errors"]:
-            print("\nErrors:")
-            for error in result["errors"]:
-                print(f"  - {error}")
-        if result["warnings"]:
-            print("\nWarnings:")
-            for warning in result["warnings"]:
-                print(f"  - {warning}")
+        print(f"\n✗ PDF validation failed", file=sys.stderr)
+        for error in result["errors"]:
+            print(f"  - {error}", file=sys.stderr)
         sys.exit(1)
 
 

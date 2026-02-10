@@ -1,0 +1,76 @@
+{
+  "header": {
+    "name": "Jane Smith",
+    "location": "New York, NY",
+    "email": "jane.smith@example.com",
+    "phone": "(212) 555-0100",
+    "linkedin": "linkedin.com/in/janesmith",
+    "github": "github.com/janesmith",
+    "website": "janesmith.dev"
+  },
+  "summary": "Full-stack software engineer with 4+ years building scalable web applications and leading technical initiatives.",
+  "education": [
+    {
+      "institution": "Massachusetts Institute of Technology",
+      "degree": "M.S. in Computer Science",
+      "dates": "2017 - 2019",
+      "gpa": "3.9/4.0",
+      "details": [
+        "Thesis: Distributed Machine Learning at Scale",
+        "Teaching Assistant for Algorithms course"
+      ]
+    },
+    {
+      "institution": "Cornell University",
+      "degree": "B.S. in Computer Engineering",
+      "dates": "2013 - 2017",
+      "details": [
+        "Summa Cum Laude"
+      ]
+    }
+  ],
+  "experience": [
+    {
+      "company": "TechStart Inc",
+      "role": "Senior Software Engineer",
+      "location": "New York, NY",
+      "dates": "Jan 2021 - Present",
+      "bullets": [
+        "Led development of microservices platform serving 1M+ users with 99.9% uptime",
+        "Architected ML recommendation system increasing user engagement by 35%",
+        "Mentored team of 4 junior engineers through code reviews and pair programming",
+        "Reduced API latency by 60% through query optimization and caching"
+      ]
+    },
+    {
+      "company": "DataFlow Systems",
+      "role": "Software Engineer",
+      "location": "Boston, MA",
+      "dates": "Jun 2019 - Dec 2020",
+      "bullets": [
+        "Built real-time analytics pipeline processing 10M+ events daily using Kafka and Spark",
+        "Developed React dashboards enabling data-driven decision making",
+        "Implemented A/B testing framework running 50+ experiments quarterly"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "PyAnalytics",
+      "subtitle": "Open Source Python Library",
+      "dates": "2020 - Present",
+      "bullets": [
+        "Created statistical analysis library with 5K+ GitHub stars",
+        "Published paper at SciPy conference"
+      ]
+    }
+  ],
+  "skills": {
+    "languages": ["Python", "JavaScript", "TypeScript", "Java", "SQL"],
+    "frameworks": ["React", "Node.js", "Django", "FastAPI", "TensorFlow"],
+    "tools": ["Docker", "Kubernetes", "Git", "Jenkins"],
+    "databases": ["PostgreSQL", "MongoDB", "Redis"],
+    "cloud": ["AWS (EC2, S3, Lambda)", "GCP"],
+    "concepts": ["Microservices", "CI/CD", "Agile", "System Design"]
+  }
+}

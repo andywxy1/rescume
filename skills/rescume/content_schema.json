@@ -1,0 +1,192 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Rescume Resume Content Schema v2.0",
+  "description": "JSON schema for structured resume content output by content-generator agent",
+  "type": "object",
+  "required": ["header"],
+  "properties": {
+    "header": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name"
+        },
+        "location": {
+          "type": "string",
+          "description": "City, State or City, Country"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number in any reasonable format"
+        },
+        "linkedin": {
+          "type": "string",
+          "description": "LinkedIn profile URL (without https://)"
+        },
+        "github": {
+          "type": "string",
+          "description": "GitHub profile URL (without https://)"
+        },
+        "website": {
+          "type": "string",
+          "description": "Personal website URL (without https://)"
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Optional 1-2 sentence professional summary"
+    },
+    "education": {
+      "type": "array",
+      "description": "Educational background",
+      "items": {
+        "type": "object",
+        "required": ["institution", "degree", "dates"],
+        "properties": {
+          "institution": {
+            "type": "string",
+            "description": "University or school name"
+          },
+          "degree": {
+            "type": "string",
+            "description": "Degree type and major (e.g., 'B.S. in Computer Science')"
+          },
+          "dates": {
+            "type": "string",
+            "description": "Date range (e.g., '2018 - 2022' or 'Expected May 2026')"
+          },
+          "gpa": {
+            "type": "string",
+            "description": "GPA if notable (e.g., '3.8/4.0')"
+          },
+          "details": {
+            "type": "array",
+            "description": "Additional details (honors, relevant coursework, etc.)",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "experience": {
+      "type": "array",
+      "description": "Professional work experience",
+      "items": {
+        "type": "object",
+        "required": ["company", "role", "dates", "bullets"],
+        "properties": {
+          "company": {
+            "type": "string",
+            "description": "Company or organization name"
+          },
+          "role": {
+            "type": "string",
+            "description": "Job title"
+          },
+          "location": {
+            "type": "string",
+            "description": "City, State or 'Remote'"
+          },
+          "dates": {
+            "type": "string",
+            "description": "Date range (e.g., 'Jun 2020 - Present')"
+          },
+          "bullets": {
+            "type": "array",
+            "description": "Achievement bullets (3-5 recommended)",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "projects": {
+      "type": "array",
+      "description": "Notable projects (optional)",
+      "items": {
+        "type": "object",
+        "required": ["name", "bullets"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Project name"
+          },
+          "subtitle": {
+            "type": "string",
+            "description": "Brief descriptor (e.g., 'Open Source Library')"
+          },
+          "dates": {
+            "type": "string",
+            "description": "Date range or timeframe"
+          },
+          "bullets": {
+            "type": "array",
+            "description": "Project description bullets",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "description": "Technical skills organized by category",
+      "properties": {
+        "languages": {
+          "type": "array",
+          "description": "Programming languages",
+          "items": {
+            "type": "string"
+          }
+        },
+        "frameworks": {
+          "type": "array",
+          "description": "Frameworks and libraries",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "description": "Tools and technologies",
+          "items": {
+            "type": "string"
+          }
+        },
+        "concepts": {
+          "type": "array",
+          "description": "Concepts and methodologies",
+          "items": {
+            "type": "string"
+          }
+        },
+        "databases": {
+          "type": "array",
+          "description": "Database systems",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cloud": {
+          "type": "array",
+          "description": "Cloud platforms and services",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,335 +1,342 @@
 ---
 name: typst-renderer
-description: "Compile structured resume JSON into single-page PDF using Typst templates with auto-fit. Use when you need to: (1) Render resume content as PDF, (2) Apply a specific template design, (3) Ensure one-page output with auto-fit sizing, (4) Validate PDF page count, (5) List available templates. This skill handles ALL formatting and layout concerns—the LLM never needs to think about fonts, spacing, or page limits."
+description: "Compile structured resume JSON into single-page PDF using Typst templates. Handles template selection, JSON-to-Typst conversion, compilation, and auto-fit logic. The LLM never needs to worry about formatting, fonts, spacing, or page limits - Typst templates handle all layout automatically."
 ---
 
-# Typst Renderer - Resume Compilation Skill
+# Typst Renderer - JSON to PDF Resume Compilation
 
-A tool skill that compiles structured JSON resume data into professionally formatted single-page PDF resumes using Typst templates.
+A tool skill for compiling structured resume content (JSON) into professional single-page PDFs using Typst templates with automatic page fitting.
 
 ## Overview
 
-The Typst Renderer eliminates layout concerns from the resume generation workflow. The LLM generates pure content as structured JSON, and this skill handles all formatting, sizing, and page fitting automatically.
+This skill provides the rendering pipeline for Rescume v2.0. It takes structured JSON content from the content-generator agent and produces a perfectly formatted single-page PDF resume using Typst templates.
 
-**Key Principle**: The LLM is a content writer, not a layout engineer. Never think about character counts, line widths, font sizes, or page limits when generating resume content.
+**Key principle:** The LLM is a content writer, not a layout engineer. This skill handles ALL formatting decisions.
 
 ## Quick Reference
 
-| Task | Command |
-|------|---------|
-| List templates | `python scripts/list_templates.py` |
-| Compile resume | `python scripts/compile.py content.json template-name output.pdf` |
-| Validate PDF | `python scripts/validate_pdf.py resume.pdf` |
-| Convert JSON | `python scripts/json_to_typst.py content.json data.typ` |
+| Task | Script |
+|------|--------|
+| List available templates | `list_templates.py` |
+| Compile JSON to PDF | `compile.py content.json template-name output.pdf` |
+| Convert JSON to Typst data | `json_to_typst.py content.json data.typ` |
+| Validate PDF output | `validate_pdf.py output.pdf` |
 
-## Core Scripts
+## Core Features
 
-### 1. compile.py - Main Compilation Orchestrator
+### 1. Automatic Page Fitting (Auto-Fit)
 
-Converts JSON content → Typst data → PDF in one step.
+The renderer automatically adjusts font size to ensure content fits on exactly 1 page:
 
+- Start at default size (11pt)
+- If content overflows, reduce font by 0.5pt steps
+- Stop at minimum size (9pt)
+- If still overflows, report to coordinator for content trimming
+
+**Result:** Guaranteed single-page output or clear feedback for content adjustment.
+
+### 2. Template Support
+
+Multiple professional templates available:
+- **basic-resume**: Clean, ATS-friendly single-column
+- **modern-resume**: Modern design with color accents
+
+Templates are Typst files with consistent data schema.
+
+### 3. Deterministic Rendering
+
+Same content + same template = same PDF every time.
+No LLM guessing about layout.
+
+## Available Scripts
+
+### list_templates.py
+
+List all available Typst templates with metadata.
+
+**Usage:**
 ```bash
-python scripts/compile.py content.json simple-technical-resume output.pdf [min_font_size]
+python scripts/list_templates.py
+```
+
+**Output:**
+```json
+[
+  {
+    "name": "basic-resume",
+    "description": "Clean, ATS-friendly single-column resume template",
+    "preview": "templates/basic-resume/preview.pdf",
+    "default_font": "New Computer Modern",
+    "default_font_size": "11pt",
+    "min_font_size": "9pt"
+  }
+]
+```
+
+### compile.py
+
+Main compilation script - handles full pipeline.
+
+**Usage:**
+```bash
+python scripts/compile.py <content.json> <template-name> <output.pdf>
+```
+
+**Example:**
+```bash
+python scripts/compile.py resume_content.json basic-resume final_resume.pdf
 ```
 
 **What it does:**
-1. Loads JSON resume content
+1. Loads JSON content
 2. Converts to Typst data format
 3. Injects into selected template
 4. Compiles with Typst CLI
-5. Validates output (page count, content)
-6. Reports success/warnings/errors
-
-**Parameters:**
-- `content.json` - Structured resume data (see JSON Schema below)
-- `template-name` - Template directory name (e.g., "simple-technical-resume")
-- `output.pdf` - Destination for compiled PDF
-- `min_font_size` - Minimum font size after auto-fit (default: 9.0pt)
+5. Checks page count
+6. If > 1 page, reduces font and recompiles
+7. Returns success or overflow error
 
 **Output:**
 ```json
 {
   "success": true,
-  "output": "path/to/resume.pdf",
   "pages": 1,
-  "errors": [],
-  "warnings": ["Font size reduced to 9.5pt to fit content"]
+  "font_size_used": 10.5,
+  "output_path": "final_resume.pdf",
+  "compilation_time_ms": 187
 }
 ```
 
-**Error Handling:**
-- If compilation fails: Check JSON schema validity
-- If page count > 1: Content needs trimming (ask LLM to reduce bullet points)
-- If font < min: Content is too dense (ask LLM to trim 2-3 bullets)
-
-### 2. list_templates.py - Template Discovery
-
-Lists all available Typst templates with metadata.
-
-```bash
-python scripts/list_templates.py              # Brief listing
-python scripts/list_templates.py --verbose    # Detailed metadata
-python scripts/list_templates.py --json       # JSON output
+Or if overflow:
+```json
+{
+  "success": false,
+  "status": "overflow",
+  "pages": 1.2,
+  "min_font_reached": 9.0,
+  "recommendation": "Reduce content by approximately 2-3 bullet points"
+}
 ```
 
-**Use this to:**
-- Present template options to users
-- Get template metadata programmatically
-- Verify template availability before compiling
+### json_to_typst.py
 
-### 3. json_to_typst.py - Data Converter
+Convert structured JSON content to Typst data declarations.
 
-Converts JSON to Typst data declarations. Usually called by compile.py automatically, but can be used standalone.
-
+**Usage:**
 ```bash
-python scripts/json_to_typst.py resume.json data.typ
+python scripts/json_to_typst.py <content.json> <output.typ>
 ```
 
-**Handles:**
-- String escaping (quotes, special characters)
-- Nested dictionaries and arrays
-- None/null values
-- Unicode content
-
-### 4. validate_pdf.py - PDF Validation
-
-Validates compiled PDF meets resume requirements.
-
-```bash
-python scripts/validate_pdf.py resume.pdf [max_pages]
+**Input (content.json):**
+```json
+{
+  "header": {
+    "name": "Andy Wen",
+    "email": "andy@example.com",
+    "phone": "(555) 123-4567"
+  },
+  "experience": [
+    {
+      "company": "Tech Corp",
+      "role": "Engineer",
+      "dates": "2020-Present",
+      "bullets": ["Built scalable systems"]
+    }
+  ]
+}
 ```
 
-**Checks:**
-- File exists and is not empty
-- Page count ≤ max_pages
-- Pages have text content
-- Content density (word count)
+**Output (data.typ):**
+```typst
+#let resume-data = (
+  header: (
+    name: "Andy Wen",
+    email: "andy@example.com",
+    phone: "(555) 123-4567",
+  ),
+  experience: (
+    (
+      company: "Tech Corp",
+      role: "Engineer",
+      dates: "2020-Present",
+      bullets: ("Built scalable systems",),
+    ),
+  ),
+)
+```
 
-## JSON Schema
+### validate_pdf.py
 
-The LLM should generate content in this format:
+Validate PDF output (page count, readability).
+
+**Usage:**
+```bash
+python scripts/validate_pdf.py <output.pdf>
+```
+
+**Output:**
+```json
+{
+  "valid": true,
+  "pages": 1,
+  "readable": true,
+  "file_size_kb": 45.2
+}
+```
+
+## JSON Content Schema
+
+The expected JSON schema for resume content (from content-generator):
 
 ```json
 {
   "header": {
-    "name": "Full Name",
-    "location": "City, State",
-    "email": "email@example.com",
-    "phone": "+1 (123) 456-7890",
-    "linkedin": "linkedin.com/in/username",
-    "github": "github.com/username",
-    "website": "example.com"
+    "name": "string (required)",
+    "location": "string (optional)",
+    "email": "string (optional)",
+    "phone": "string (optional)",
+    "linkedin": "string (optional)",
+    "github": "string (optional)",
+    "website": "string (optional)"
   },
-  "summary": "Optional 1-2 sentence professional summary",
+  "summary": "string (optional)",
   "education": [
     {
-      "institution": "University Name",
-      "degree": "M.S. / B.S. / etc.",
-      "field": "Field of Study",
-      "location": "City, State",
-      "start_date": "YYYY-MM",
-      "end_date": "YYYY-MM or 'Present'",
-      "gpa": "3.8/4.0 (optional)",
-      "details": [
-        "Relevant coursework, awards, or details"
-      ]
+      "institution": "string",
+      "degree": "string",
+      "dates": "string",
+      "gpa": "string (optional)",
+      "details": ["string"]
     }
   ],
   "experience": [
     {
-      "company": "Company Name",
-      "role": "Job Title",
-      "location": "City, State",
-      "start_date": "YYYY-MM",
-      "end_date": "YYYY-MM or 'Present'",
-      "bullets": [
-        "Achievement-focused bullet point with metrics",
-        "Another impact statement with specific results"
-      ]
+      "company": "string",
+      "role": "string",
+      "location": "string (optional)",
+      "dates": "string",
+      "bullets": ["string"]
     }
   ],
   "projects": [
     {
-      "name": "Project Name",
-      "subtitle": "Optional tagline",
-      "dates": "Optional date range",
-      "bullets": [
-        "What you built and the impact"
-      ]
+      "name": "string",
+      "subtitle": "string (optional)",
+      "dates": "string (optional)",
+      "bullets": ["string"]
     }
   ],
   "skills": {
-    "languages": ["Python", "Java", "SQL"],
-    "frameworks": ["TensorFlow", "React", "Django"],
-    "tools": ["Git", "Docker", "AWS"],
-    "concepts": ["Machine Learning", "A/B Testing", "CI/CD"]
+    "languages": ["string"],
+    "frameworks": ["string"],
+    "tools": ["string"],
+    "concepts": ["string"]
   }
 }
 ```
 
-**Field Notes:**
-- All fields are optional except `header.name`
-- Dates should be `YYYY-MM` format or "Present"
-- `bullets` arrays should have 3-5 items per role
-- Skills can be organized differently per template
-
-## Auto-Fit Behavior
-
-Templates implement auto-fit logic to guarantee single-page output:
-
-1. **Default Rendering**: Start at default font size (e.g., 10.5pt)
-2. **Overflow Detection**: Check if content exceeds one page
-3. **Progressive Reduction**: Shrink font size in small steps (0.5pt)
-4. **Minimum Threshold**: Stop at minimum font (e.g., 9pt)
-5. **Overflow Report**: If still overflows, report to orchestrator
-
-**When auto-fit reports font too small:**
-- DO NOT try to manually adjust font sizes
-- DO NOT worry about character counts or line widths
-- DO ask the LLM to trim 2-3 bullet points
-- DO recompile with trimmed content
-- Iterate max 2-3 times—content should fit easily with reasonable volume
-
-## Workflow Integration
-
-### Phase 2: Resume Tailoring (Simplified)
+## Auto-Fit Algorithm
 
 ```
-Step 1: Job Analysis (ats-analyzer)
-  ↓
-Step 2: Coverage Mapping (coverage-mapper)
-  ↓
-Step 3: Template Selection
-  → python list_templates.py
-  → User picks template
-  ↓
-Step 4: Content Generation (content-generator)
-  → LLM outputs structured JSON
-  → NO formatting concerns, NO word counting
-  ↓
-Step 5: Typst Compilation (THIS SKILL)
-  → python compile.py content.json template-name output.pdf
-  → Auto-fit ensures 1-page output
-  ↓
+1. font_size = 11pt (default)
+2. Compile resume with font_size
+3. Count pages in output PDF
+4. If pages == 1:
+     SUCCESS - return PDF
+5. Else if pages > 1 and font_size > 9pt:
+     font_size -= 0.5pt
+     Go to step 2
+6. Else:
+     OVERFLOW - return error with recommendations
+```
+
+**Performance:** Each compile ~50ms, max 5 iterations = ~250ms total
+
+## Integration with Rescume Workflow
+
+In the main rescume coordinator skill (Phase 2):
+
+```
+Step 4: Content Generation
+  → content-generator outputs content.json
+
+Step 5: Typst Compilation (USE THIS SKILL)
+  → User selects template (or default)
+  → Call: compile.py content.json basic-resume output.pdf
+  → If success: Proceed to Step 6
+  → If overflow: Ask LLM to trim content, recompile
+
 Step 6: Quality Check
-  → If font < 9pt: trim content, recompile
-  → hr-critic evaluates content quality
-  ↓
+  → hr-critic evaluates content (from JSON, not PDF)
+  → If quality issues: Revise JSON, recompile
+
 Step 7: Deliver PDF
 ```
 
-## Template Management
+## Instructions for LLM
 
-### Available Templates
+When using this skill:
 
-Run `list_templates.py` to see current templates. Initial templates:
-- `simple-technical-resume` - Clean, ATS-friendly, single-column
+1. **Never worry about formatting** - that's handled by Typst templates
+2. **Never count words or characters** - auto-fit handles page fitting
+3. **Never think about fonts, spacing, or layout** - templates handle all of that
+4. **Focus purely on content quality** - write compelling, tailored bullets
+5. **If overflow reported** - simply reduce content volume (remove 2-3 bullets or shorten descriptions)
 
-### Adding New Templates
+Your job is to generate great resume content as JSON. This skill makes it look professional.
 
-See `templates/README.md` for template authoring guide. New templates must:
-1. Accept the standard JSON schema
-2. Implement auto-fit logic
-3. Provide metadata.json
-4. Generate single-page output
+## Error Handling
+
+All scripts return proper exit codes:
+- `0`: Success
+- `1`: Compilation failed (Typst error)
+- `2`: File not found
+- `3`: Invalid JSON schema
+- `4`: Overflow at minimum font size
+
+Check results:
+```bash
+python scripts/compile.py content.json basic-resume output.pdf && echo "Success!" || echo "Failed"
+```
 
 ## Dependencies
 
-**Required:**
-- Typst CLI (v0.11+) - Install: `brew install typst` (macOS) or see https://typst.app
-- pdfplumber - Install: `pip install pdfplumber`
+- **Typst CLI** (system binary): Must be installed and in PATH
+- **pdfplumber** (Python): `pip install pdfplumber`
+- **Python 3.8+**: Standard library (subprocess, json, pathlib)
 
-**Optional:**
-- python-docx - Only if still needed for Phase 1 DOCX parsing
+## File Structure
 
-## Troubleshooting
-
-### "Typst CLI not found"
-Install Typst: `brew install typst` (macOS), or download from https://github.com/typst/typst
-
-### "Template not found"
-Run `list_templates.py` to see available templates. Check spelling matches exactly.
-
-### "Invalid JSON"
-Validate JSON schema matches the format above. Common issues:
-- Missing required `header.name` field
-- Malformed dates (should be YYYY-MM)
-- Unescaped quotes in strings
-
-### "Resume overflows 1 page"
-The auto-fit reduced font to minimum but content still doesn't fit. Ask LLM to:
-- Remove 2-3 least relevant bullet points
-- Condense lengthy bullets to 1-2 sentences
-- Consider removing optional "projects" section if space-constrained
-
-### "PDF is empty"
-Typst compiled but output has no visible content. Check:
-- JSON data has actual content (not empty strings)
-- Template is compatible with data schema
-- No errors in Typst compilation output
-
-## Performance
-
-- Typst compilation: ~50-100ms per resume
-- JSON conversion: ~5ms
-- PDF validation: ~10-50ms
-- **Total pipeline: < 200ms** (extremely fast, iteration is cheap)
-
-## Important Reminders for LLMs
-
-1. **Never count words or characters** when generating content
-2. **Never worry about page fitting** — the template handles it
-3. **Never add formatting instructions** to content (bold, italic, spacing)
-4. **Focus on quality and relevance** — let auto-fit handle quantity
-5. **If font too small:** trim content and recompile (iteration is fast)
-6. **Trust the pipeline** — it's deterministic and reliable
-
-## Examples
-
-### Typical Workflow
-
-```python
-# 1. LLM generates content (content-generator agent)
-content = {
-    "header": {"name": "Jane Doe", ...},
-    "experience": [...],
-    ...
-}
-
-# 2. Save to JSON
-with open("content.json", "w") as f:
-    json.dump(content, f)
-
-# 3. Compile with typst-renderer
-result = subprocess.run([
-    "python", "skills/typst-renderer/scripts/compile.py",
-    "content.json",
-    "simple-technical-resume",
-    "output.pdf"
-])
-
-# 4. Check result
-if result.returncode == 0:
-    print("✓ Resume compiled successfully")
-else:
-    print("✗ Compilation failed, check errors")
+```
+typst-renderer/
+├── SKILL.md                    (this file)
+└── scripts/
+    ├── compile.py              # Main compilation orchestrator
+    ├── json_to_typst.py        # JSON → Typst converter
+    ├── validate_pdf.py         # PDF validation
+    └── list_templates.py       # Template listing
 ```
 
-### Handling Overflow
+Templates live in: `/Users/andy/.claude/skills/rescume/templates/`
 
-```python
-# If compile reports font too small or overflow:
-# → Ask LLM to trim content
+## Testing
 
-# Re-generate with fewer bullets
-trimmed_content = ask_llm_to_trim(content, reduce_by=3)
+Test the complete pipeline:
+```bash
+# 1. Create test content
+echo '{"header":{"name":"Test User","email":"test@example.com"},"experience":[{"company":"Test Co","role":"Engineer","dates":"2020-Present","bullets":["Built things"]}],"skills":{"languages":["Python"]}}' > test_content.json
 
-# Recompile
-compile_resume(trimmed_content, template, output)
+# 2. Compile
+python scripts/compile.py test_content.json basic-resume test_output.pdf
+
+# 3. Validate
+python scripts/validate_pdf.py test_output.pdf
 ```
 
-## See Also
+## Notes
 
-- `templates/README.md` - Template authoring guide
-- `agents/content-generator.md` - JSON content generation
-- `skills/rescume/SKILL.md` - Main workflow orchestrator
+- Compilation is fast (~50-200ms total with auto-fit)
+- Templates use fallback fonts for maximum compatibility
+- All PDFs are US Letter size, single page
+- ATS-friendly - no complex graphics or unusual formatting
+- Works offline - no external API calls needed
