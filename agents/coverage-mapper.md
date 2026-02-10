@@ -325,7 +325,7 @@ Before finalizing coverage matrix:
 ### Bullet-Level Granularity
 Track which specific bullets demonstrate which skills:
 - Helps content-generator select exact bullets to include
-- Helps compression-strategist know which bullets are critical
+- Helps content-generator prioritize which experiences to emphasize
 
 ## Success Criteria
 

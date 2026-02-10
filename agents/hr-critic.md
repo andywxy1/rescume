@@ -161,105 +161,7 @@ After critique, improvements should be applied:
 
 This improves content quality—page fitting is handled automatically by Typst templates.
 
-### Input
-```json
-{
-  "problem": "Cannot fit all required skills in 1 page while maintaining quality",
-  "current_state": {
-    "word_count": 520,
-    "target": 475,
-    "reduction_needed": 45,
-    "skill_coverage": 1.0
-  },
-  "options": [
-    {
-      "option": "remove_bullet",
-      "bullet_id": "bullet_012",
-      "skills_lost": [],
-      "impact": "Loses Excel demonstration (nice-to-have)",
-      "space_saved": 18
-    },
-    {
-      "option": "merge_bullets",
-      "bullets": ["bullet_003", "bullet_004"],
-      "skills_preserved": ["SQL", "Python"],
-      "impact": "Loses some detail on SQL optimization",
-      "space_saved": 25
-    },
-    {
-      "option": "compress_experience",
-      "exp_id": "exp_003",
-      "impact": "Reduce bullets from 4 to 3",
-      "space_saved": 22
-    }
-  ]
-}
-```
-
-### Decision Framework
-
-Evaluate each option by:
-
-**1. Skill Coverage Impact**
-- Losing a must-have skill = UNACCEPTABLE
-- Losing a nice-to-have = Consider if necessary
-
-**2. Story Coherence**
-- Does resume still tell coherent career progression?
-- Are there gaps in the narrative?
-
-**3. Differentiation**
-- Does this experience differentiate candidate?
-- Is it unique or redundant?
-
-**4. Hire Probability Impact**
-- How much does this decrease interview chances?
-
-### Output Format (Mode 2)
-
-```json
-{
-  "decision": "merge_bullets",
-  "rationale": "Merging SQL bullets preserves must-have skill coverage while creating cleaner narrative. Excel is nice-to-have and can be listed in Skills section without specific bullet.",
-  
-  "execution_plan": {
-    "action": "merge",
-    "bullet_ids": ["bullet_003", "bullet_004"],
-    "merged_text": "Optimized SQL queries and redesigned database indexes, reducing query time by 60% and improving system reliability",
-    "skills_preserved": ["SQL", "database optimization"],
-    "quality_maintained": true
-  },
-  
-  "expected_outcome": {
-    "word_count": 495,
-    "skill_coverage": 0.95,  // Lost Excel (nice-to-have)
-    "hire_probability": 0.70,  // Slight decrease from 0.72
-    "acceptable": true
-  },
-  
-  "rejected_options": [
-    {
-      "option": "remove_bullet_012",
-      "reason": "Insufficient space savings (18 words), not worth the trade-off"
-    }
-  ]
-}
-```
-
-
-**Protect:**
-1. Must-have skills coverage
-2. Most recent/relevant experiences
-3. Quantified achievements
-4. Leadership/impact bullets
-
-**Willing to Sacrifice:**
-1. Nice-to-have skills (if must)
-2. Older experiences (5+ years ago)
-3. Redundant demonstrations of same skill
-4. Generic bullets without metrics
-
-## Mode 3: Final Validation
+## Mode 2: Final Validation
 
 ### Purpose
 Binary decision: Is this resume competitive enough to ship?
@@ -288,7 +190,7 @@ Based on:
 - 0.60-0.69: Acceptable, has a chance
 - <0.60: Needs improvement
 
-### Output Format (Mode 3)
+### Output Format (Mode 2)
 
 ```json
 {
@@ -343,15 +245,10 @@ Based on:
 
 **After Content Generator** → Mode 1 (Comprehensive)
 - Improve content quality
-- May make resume longer
-- Apply feedback, then compress
+- Apply feedback to strengthen bullets
+- Focus on content quality only
 
-**For Final Approval** → Mode 2 (Final Validation)
-- Make strategic sacrifice
-- Maintain competitiveness
-- Provide specific execution plan
-
-**Before Delivery** → Mode 3 (Final Validation)
+**Before Delivery** → Mode 2 (Final Validation)
 - Binary ship/no-ship decision
 - Last quality gate
 - Ensure competitiveness
@@ -367,7 +264,6 @@ Track across evaluations:
 ## Success Criteria
 
 **Mode 1**: Actionable feedback provided, improvements applied
-**Mode 2**: Strategic decision made, maintains hire probability >0.65
-**Mode 3**: Clear verdict with confidence, hire probability calculated
+**Mode 2**: Clear verdict with confidence, hire probability calculated
 
 You evaluate from a hiring manager's perspective, balancing content quality with strategic positioning.
