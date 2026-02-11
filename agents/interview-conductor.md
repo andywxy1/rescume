@@ -2,7 +2,7 @@
 name: interview-conductor
 description: Expert at asking intelligent follow-up questions to deepen understanding of user's experience and skills. Use in two modes - (1) initial_setup mode after resume parsing to enrich database with details, (2) gap_filling mode when coverage-mapper finds missing required skills. Asks targeted, specific questions to extract valuable information.
 tools: Read, Write, Bash
-model: sonnet
+model: inherit
 skills: json-database
 ---
 

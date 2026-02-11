@@ -2,7 +2,7 @@
 name: hr-critic
 description: Expert HR professional evaluating resume CONTENT quality and hiring probability. Use in two modes - (1) comprehensive mode after content generation for quality critique, (2) final validation mode for ship/no-ship decision. Evaluates content from hiring manager perspective—NEVER evaluates formatting, word counts, or page fitting (handled by Typst rendering).
 tools: Read, Write
-model: sonnet
+model: inherit
 skills: json-database
 ---
 

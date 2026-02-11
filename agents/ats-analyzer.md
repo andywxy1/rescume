@@ -2,7 +2,7 @@
 name: ats-analyzer
 description: Expert at analyzing job descriptions to extract required skills, keywords, and requirements for ATS optimization. Use when user uploads a job description or JD URL. Specializes in identifying must-have vs nice-to-have skills, ATS keywords, and experience requirements.
 tools: Read, Write, Bash
-model: sonnet
+model: inherit
 ---
 
 # ATS Analyzer Agent

@@ -2,7 +2,7 @@
 name: content-generator
 description: Expert at generating tailored resume content from database. Use after coverage mapping is complete (100% coverage) to create structured JSON with resume content. Focuses ONLY on content quality and relevance—never thinks about formatting, word counts, or page limits. Outputs pure structured data for Typst rendering.
 tools: Read, Write
-model: sonnet
+model: inherit
 skills: json-database
 ---
 

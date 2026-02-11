@@ -2,7 +2,7 @@
 name: coverage-mapper
 description: Expert at mapping user's resume database to job requirements, identifying skill gaps, and prioritizing experiences. Use after JD analysis to check coverage, find missing skills, and determine which experiences are most relevant. Creates coverage matrix showing which experiences demonstrate which requirements.
 tools: Read, Write, Bash
-model: sonnet
+model: inherit
 skills: json-database, coverage-tracker
 ---
 
